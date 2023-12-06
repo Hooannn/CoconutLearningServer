@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  gateway:
+    build:
+      context: apps/gateway
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./apps/gateway:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - SOCKET_EVENT_SECRET=wTD0y:6Ch(Z|H[Xh<rp"1Gx)3J]N[c
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=9QYVMZNxuSmPp1GyvNs38FKh4rqBMZfCMrCWkXlnmpSm
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis
+    command: redis-server --requirepass 9QYVMZNxuSmPp1GyvNs38FKh4rqBMZfCMrCWkXlnmpSm
+    ports:
+      - 6379:6379
+    volumes:
+      - ./data/redis:/data
