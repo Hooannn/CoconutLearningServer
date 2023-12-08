@@ -35,8 +35,21 @@ public class JwtService {
                 .getBody();
     }
 
+    private Claims extractAllClaims(String token, boolean refresh) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey(refreshSecretKey))
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver, boolean refresh) {
+        final Claims claims = extractAllClaims(token, refresh);
         return claimsResolver.apply(claims);
     }
 
@@ -47,6 +60,10 @@ public class JwtService {
 
     public String extractSub(String jwt) {
         return extractClaim(jwt, Claims::getSubject);
+    }
+
+    public String extractSub(String jwt, boolean refresh) {
+        return extractClaim(jwt, Claims::getSubject, refresh);
     }
 
     public String extractRole(String jwt) {
@@ -67,12 +84,24 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    private Date extractExpiration(String token, boolean refresh) {
+        return extractClaim(token, Claims::getExpiration, refresh);
+    }
+
     public boolean isTokenValid(String token) {
         return !isTokenExpired(token);
     }
 
+    public boolean isTokenValid(String token, boolean refresh) {
+        return !isTokenExpired(token, refresh);
+    }
+
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
+    }
+
+    private boolean isTokenExpired(String token, boolean refresh) {
+        return extractExpiration(token, refresh).before(new Date());
     }
 
     private String buildToken(

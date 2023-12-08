@@ -14,6 +14,9 @@ public class RedisService {
         redisTemplate.opsForValue().set(key, value);
     }
 
+    public Boolean deleteValue(String key) {
+        return redisTemplate.delete(key);
+    }
     public void setValue(String key, String value, long expirationInSeconds) {
         redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(expirationInSeconds));
     }

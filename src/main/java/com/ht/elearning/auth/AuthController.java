@@ -1,8 +1,6 @@
 package com.ht.elearning.auth;
 
-import com.ht.elearning.auth.dtos.AuthenticateDto;
-import com.ht.elearning.auth.dtos.RegisterDto;
-import com.ht.elearning.auth.dtos.VerifyAccountDto;
+import com.ht.elearning.auth.dtos.*;
 import com.ht.elearning.config.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,11 +54,43 @@ public class AuthController {
         );
     }
 
-
-    /*
-    @PostMapping("/refresh")
-    public ResponseEntity<Response<AuthenticationResponse>> refresh(@Valid @RequestBody AuthenticateDto authenticateDto) {
-
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Response<?>> forgotPassword(@Valid @RequestBody ForgotPasswordDto forgotPasswordDto) {
+        boolean success = authService.forgotPassword(forgotPasswordDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Your request is being processed",
+                        success,
+                        null
+                )
+        );
     }
-    */
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Response<?>> resetPassword(@Valid @RequestBody ResetPasswordDto resetPasswordDto) {
+        boolean success = authService.resetPassword(resetPasswordDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Your password has been updated",
+                        success,
+                        null
+                )
+        );
+    }
+
+
+    @PostMapping("/refresh")
+    public ResponseEntity<Response<Credentials>> refresh(@Valid @RequestBody RefreshDto refreshDto) {
+        var credentials = authService.refresh(refreshDto);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Refreshed successfully",
+                        true,
+                        credentials
+                )
+        );
+    }
 }

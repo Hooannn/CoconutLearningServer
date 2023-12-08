@@ -1,5 +1,6 @@
 package com.ht.elearning.jwt;
 
+import com.ht.elearning.user.Role;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,7 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         sub,
                         null,
-                        List.of(new SimpleGrantedAuthority(role))
+                        Role.valueOf(role).getAuthorities()
                 );
                 authToken.setDetails(
                         new WebAuthenticationDetailsSource().buildDetails(request)

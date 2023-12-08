@@ -9,11 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-
 @Service
 @RequiredArgsConstructor
-public class AuthProcessing {
+public class AuthProcessor {
     private final RedisService redisService;
     private final MailService mailService;
     @Async
@@ -28,5 +26,12 @@ public class AuthProcessing {
     public void processWelcomeUser(User user) throws MessagingException {
         var email = user.getEmail();
         mailService.sendWelcomeMail(email, "ELearning - Welcome");
+    }
+
+    @Async
+    public void processForgotPassword(String email) throws MessagingException {
+        var signature = Helper.generateRandomSecret(12);
+        redisService.setValue("reset_password_signature:" + email, signature, 600);
+        mailService.sendResetPasswordVerificationMail(email, "ELearning - Reset password", signature);
     }
 }
