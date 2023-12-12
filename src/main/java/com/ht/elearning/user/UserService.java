@@ -28,6 +28,8 @@ public class UserService {
             if (!exists) throw new HttpException("User not found", HttpStatus.BAD_REQUEST);
             repository.deleteById(userId);
             return true;
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
         } catch (Exception e) {
             throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -56,6 +58,8 @@ public class UserService {
             }
 
             return savedUser;
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
         } catch (Exception e) {
             throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -76,6 +80,8 @@ public class UserService {
             repository.save(user);
 
             return user;
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
         } catch (Exception e) {
             throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
         }

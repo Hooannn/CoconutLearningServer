@@ -48,6 +48,8 @@ public class AuthService {
                     .credentials(getCredentials(savedUser))
                     .user(savedUser)
                     .build();
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
         } catch (Exception e) {
             throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -67,6 +69,8 @@ public class AuthService {
                     .credentials(getCredentials(user))
                     .user(user)
                     .build();
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
         } catch (AuthenticationException e) {
             throw new HttpException(e.getMessage(), HttpStatus.FORBIDDEN);
         }
@@ -104,6 +108,8 @@ public class AuthService {
             if (!exists) throw new HttpException("Bad request", HttpStatus.BAD_REQUEST);
             authProcessor.processForgotPassword(email);
             return true;
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
         } catch (Exception e) {
             throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -122,6 +128,8 @@ public class AuthService {
                 return true;
             }
             throw new HttpException("Bad credentials", HttpStatus.FORBIDDEN);
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
         } catch (AuthenticationException e) {
             throw new HttpException(e.getMessage(), HttpStatus.FORBIDDEN);
         }
@@ -143,6 +151,8 @@ public class AuthService {
                 }
             }
             throw new HttpException(ERROR_MESSAGE, HttpStatus.FORBIDDEN);
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
         } catch (Exception e) {
             throw new HttpException(e.getMessage(), HttpStatus.FORBIDDEN);
         }

@@ -1,28 +1,26 @@
 package com.ht.elearning.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ht.elearning.config.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
 
-@Data
+@EqualsAndHashCode(callSuper = true)
 @Builder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
-public class User implements UserDetails {
+public class User extends BaseEntity implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+
     private String firstName;
     private String lastName;
     private String avatarUrl;
@@ -41,26 +39,36 @@ public class User implements UserDetails {
     private Role role;
 
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return role.getAuthorities();
     }
 
     @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    @JsonIgnore
     public String getUsername() {
         return email;
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonExpired() {
         return verified;
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonLocked() {
         return verified;
     }
 
     @Override
+    @JsonIgnore
     public boolean isCredentialsNonExpired() {
         return verified;
     }
