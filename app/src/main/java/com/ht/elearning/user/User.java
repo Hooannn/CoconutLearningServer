@@ -77,4 +77,8 @@ public class User extends BaseEntity implements UserDetails {
     public boolean isEnabled() {
         return verified;
     }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }

@@ -3,13 +3,11 @@ package com.ht.elearning.classroom;
 
 import com.ht.elearning.classroom.dtos.CreateClassroomDto;
 import com.ht.elearning.classroom.dtos.InviteDto;
-import com.ht.elearning.classroom.dtos.JoinDto;
 import com.ht.elearning.config.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -67,15 +65,42 @@ public class ClassroomController {
         );
     }
 
-
-    @PostMapping("/join")
-    public ResponseEntity<Response<Classroom>> join(@Valid @RequestBody JoinDto joinDto) {
+    @PostMapping("/join/{inviteCode}")
+    public ResponseEntity<Response<Classroom>> join(@PathVariable String inviteCode) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.join(joinDto, authentication.getPrincipal().toString());
+        var success = service.join(inviteCode, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
                         "Successfully joined classroom",
+                        success,
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/refuse/{inviteCode}")
+    public ResponseEntity<Response<Classroom>> refuse(@PathVariable String inviteCode) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = service.refuse(inviteCode, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Successfully refused to join classroom",
+                        success,
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/leave/{classroomId}")
+    public ResponseEntity<Response<Classroom>> leave(@PathVariable String classroomId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = service.leave(classroomId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Successfully left classroom",
                         success,
                         null
                 )

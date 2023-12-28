@@ -8,6 +8,7 @@ import com.ht.elearning.redis.RedisService;
 import com.ht.elearning.user.Role;
 import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserRepository;
+import com.ht.elearning.utils.MD5;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,10 +36,13 @@ public class AuthService {
             if (userRepository.existsByEmail(registerDto.getEmail())) {
                 throw new HttpException("Email is already registered", HttpStatus.BAD_REQUEST);
             }
+            String hash = MD5.md5Hex(registerDto.getEmail().toLowerCase());
+            String defaultAvatarUrl = "https://gravatar.com/avatar/" + hash;
             var user = User.builder()
                     .firstName(registerDto.getFirstName())
                     .lastName(registerDto.getLastName())
                     .email(registerDto.getEmail())
+                    .avatarUrl(defaultAvatarUrl)
                     .password(passwordEncoder.encode(registerDto.getPassword()))
                     .role(Role.USER)
                     .build();
