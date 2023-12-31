@@ -1,4 +1,4 @@
-package com.ht.elearning.socket;
+package com.ht.elearning.config;
 
 
 import com.corundumstudio.socketio.AuthorizationListener;

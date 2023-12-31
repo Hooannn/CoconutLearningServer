@@ -106,4 +106,18 @@ public class ClassroomController {
                 )
         );
     }
+
+    @PostMapping("/{classroomId}/class_code/reset")
+    public ResponseEntity<Response<Classroom>> resetClassCode(@PathVariable String classroomId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classroom = service.resetClassCode(classroomId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Successfully reset class code",
+                        true,
+                        classroom
+                )
+        );
+    }
 }

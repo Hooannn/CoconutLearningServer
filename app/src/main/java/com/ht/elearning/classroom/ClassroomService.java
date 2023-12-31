@@ -189,4 +189,27 @@ public class ClassroomService {
             throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+
+    public Classroom resetClassCode(String classroomId, String ownerId) {
+        try {
+            var classroom = classroomRepository.findByIdAndOwnerId(classroomId, ownerId).orElseThrow(
+                    () -> new HttpException("Classroom not found", HttpStatus.BAD_REQUEST)
+            );
+
+            Random random = new Random();
+            int randomLength = random.nextInt(7 + 1 - 5) + 5;
+            String newClassCode = Helper.generateRandomSecret(randomLength);
+            if (classroomRepository.existsByInviteCode(newClassCode))
+                throw new HttpException("Something went wrong. Please try again", HttpStatus.CONFLICT);
+
+            classroom.setInviteCode(newClassCode);
+
+            return classroomRepository.save(classroom);
+        } catch (HttpException e) {
+            throw new HttpException(e.getMessage(), e.getStatus());
+        } catch (Exception e) {
+            throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
 }

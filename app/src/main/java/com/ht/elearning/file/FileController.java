@@ -1,0 +1,49 @@
+package com.ht.elearning.file;
+
+import com.ht.elearning.config.Response;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@Controller
+@RequiredArgsConstructor
+@RequestMapping(path = "/api/v1/files")
+public class FileController {
+    private final FileService fileService;
+
+    @PostMapping("upload")
+    public ResponseEntity<Response<List<File>>> upload(@RequestPart("files") List<MultipartFile> files) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var uploadedFiles = fileService.upload(files, authentication.getPrincipal().toString());
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        "Uploaded successfully",
+                        true,
+                        uploadedFiles
+                )
+        );
+    }
+
+
+    @DeleteMapping("{fileId}")
+    public ResponseEntity<Response<List<File>>> remove(@PathVariable String fileId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = fileService.remove(fileId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Removed",
+                        success,
+                        null
+                )
+        );
+    }
+}

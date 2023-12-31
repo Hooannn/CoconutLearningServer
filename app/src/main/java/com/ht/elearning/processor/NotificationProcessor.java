@@ -56,7 +56,7 @@ public class NotificationProcessor {
                             });
 
                     try {
-                        pushNotificationService.push(
+                        var batchResponse = pushNotificationService.push(
                                 target,
                                 Notification.builder()
                                         .setBody(notification.getContent())
@@ -65,9 +65,13 @@ public class NotificationProcessor {
                                         .build(),
                                 null
                         );
+                        logger.debug(
+                                "Handle[processClassroomInvitation] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                                batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+                        );
                     } catch (Exception e) {
                         logger.warn(
-                                "Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                                "Handle[processClassroomInvitation] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
                                 target, notification.getTitle(), notification.getContent(),notification.getImageUrl(), e.getMessage()
                         );
                     }
@@ -76,12 +80,14 @@ public class NotificationProcessor {
 
             URL finalAcceptUrl = acceptUrl;
             CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
+                String mailSubject = "ELearning - Classroom invitation";
                 try {
-                    mailService.sendClassroomInvitationMail(invitation.getEmail(), "ELearning - Classroom invitation", finalAcceptUrl.toString());
+                    mailService.sendClassroomInvitationMail(invitation.getEmail(), mailSubject, finalAcceptUrl.toString());
                 } catch (MessagingException e) {
                     logger.error(
-                            "Error while sending email - Email[{}] - Subject[\"ELearning - Classroom invitation\"] - Message[{}]",
+                            "Error while sending email - Email[{}] - Subject[{}] - Message[{}]",
                             invitation.getEmail(),
+                            mailSubject,
                             e.getMessage()
                     );
                 }
@@ -114,7 +120,7 @@ public class NotificationProcessor {
                 });
 
         try {
-            pushNotificationService.push(
+            var batchResponse = pushNotificationService.push(
                     target,
                     Notification.builder()
                             .setBody(notification.getContent())
@@ -123,9 +129,13 @@ public class NotificationProcessor {
                             .build(),
                     null
             );
+            logger.debug(
+                    "Handle[processClassroomJoining] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+            );
         } catch (Exception e) {
             logger.warn(
-                    "Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    "Handle[processClassroomJoining] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
                     target, notification.getTitle(), notification.getContent(),notification.getImageUrl(), e.getMessage()
             );
         }
@@ -147,7 +157,7 @@ public class NotificationProcessor {
                 });
 
         try {
-            pushNotificationService.push(
+            var batchResponse = pushNotificationService.push(
                     target,
                     Notification.builder()
                             .setBody(notification.getContent())
@@ -156,9 +166,13 @@ public class NotificationProcessor {
                             .build(),
                     null
             );
+            logger.debug(
+                    "Handle[processClassroomLeaving] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+            );
         } catch (Exception e) {
             logger.warn(
-                    "Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    "Handle[processClassroomLeaving] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
                     target, notification.getTitle(), notification.getContent(),notification.getImageUrl(), e.getMessage()
             );
         }

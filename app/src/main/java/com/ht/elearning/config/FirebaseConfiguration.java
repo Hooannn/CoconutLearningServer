@@ -29,7 +29,6 @@ public class FirebaseConfiguration {
     @Bean
     GoogleCredentials googleCredentials() {
         String filePath = System.getProperty("user.dir") + "/app/serviceAccountKey.json";
-        System.out.println(filePath);
         try (FileInputStream serviceAccount = new FileInputStream(filePath)) {
             return GoogleCredentials.fromStream(serviceAccount);
         } catch (IOException e) {
