@@ -19,70 +19,62 @@ import java.util.stream.Stream;
 public class PushNotificationService {
     private final FcmTokenRepository fcmTokenRepository;
     private final FirebaseMessaging firebaseMessaging;
-    private final UserService userService;
+
     public FcmToken registerToken(RegisterTokenDto registerTokenDto, String userId) {
-        try {
-             FcmToken token = fcmTokenRepository.findById(userId).orElse(null);
-             String value = registerTokenDto.getToken();
-             Platform platform = registerTokenDto.getPlatform();
-             if (token == null) {
-                var builder = FcmToken.builder().uid(userId);
-                switch (platform) {
-                    case IOS -> builder.ios(value);
-                    case WEB -> builder.web(value);
-                    case ANDROID -> builder.android(value);
-                }
-                token = builder.build();
-             } else {
-                 switch (platform) {
-                     case IOS -> token.setIos(value);
-                     case WEB -> token.setWeb(value);
-                     case ANDROID -> token.setAndroid(value);
-                 }
-             }
-            return fcmTokenRepository.save(token);
-        } catch (Exception e) {
-            throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
+        FcmToken token = fcmTokenRepository.findById(userId).orElse(null);
+        String value = registerTokenDto.getToken();
+        Platform platform = registerTokenDto.getPlatform();
+        if (token == null) {
+            var builder = FcmToken.builder().uid(userId);
+            switch (platform) {
+                case IOS -> builder.ios(value);
+                case WEB -> builder.web(value);
+                case ANDROID -> builder.android(value);
+            }
+            token = builder.build();
+        } else {
+            switch (platform) {
+                case IOS -> token.setIos(value);
+                case WEB -> token.setWeb(value);
+                case ANDROID -> token.setAndroid(value);
+            }
         }
+        return fcmTokenRepository.save(token);
     }
 
     public FcmToken removeToken(RemoveTokenDto removeTokenDto, String userId) {
-        try {
-            FcmToken token = fcmTokenRepository.findById(userId)
-                    .orElseThrow(() -> new HttpException("Token not found", HttpStatus.BAD_REQUEST));
-            Platform platform = removeTokenDto.getPlatform();
-            switch (platform) {
-                case IOS -> token.setIos(null);
-                case WEB -> token.setWeb(null);
-                case ANDROID -> token.setAndroid(null);
-            }
-            return fcmTokenRepository.save(token);
-        } catch (Exception e) {
-            throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
+        FcmToken token = fcmTokenRepository.findById(userId)
+                .orElseThrow(() -> new HttpException("Token not found", HttpStatus.BAD_REQUEST));
+        Platform platform = removeTokenDto.getPlatform();
+        switch (platform) {
+            case IOS -> token.setIos(null);
+            case WEB -> token.setWeb(null);
+            case ANDROID -> token.setAndroid(null);
         }
+        return fcmTokenRepository.save(token);
     }
 
-    public BatchResponse push(List<String> userIds, Notification notification, Map<String, String> messageData) throws FirebaseMessagingException, Exception {
+    public BatchResponse push(List<String> userIds, Notification notification, Map<String, String> messageData) throws Exception {
         List<FcmToken> fcmTokens = fcmTokenRepository.findAllById(userIds);
         if (fcmTokens.isEmpty()) throw new Exception("Token not found");
         List<Message> messages = buildMessages(fcmTokens, notification, messageData);
         return firebaseMessaging.sendAll(messages);
     }
 
-    public BatchResponse push(List<String> userIds, Notification notification, Map<String, String> messageData, boolean dryRun) throws FirebaseMessagingException, Exception {
+    public BatchResponse push(List<String> userIds, Notification notification, Map<String, String> messageData, boolean dryRun) throws Exception {
         List<FcmToken> fcmTokens = fcmTokenRepository.findAllById(userIds);
         if (fcmTokens.isEmpty()) throw new Exception("Token not found");
         List<Message> messages = buildMessages(fcmTokens, notification, messageData);
         return firebaseMessaging.sendAll(messages, dryRun);
     }
 
-    public BatchResponse push(String userId, Notification notification, Map<String, String> messageData) throws FirebaseMessagingException, Exception {
+    public BatchResponse push(String userId, Notification notification, Map<String, String> messageData) throws Exception {
         FcmToken fcmToken = fcmTokenRepository.findById(userId).orElseThrow(() -> new Exception("Token not found"));
         List<Message> messages = buildMessages(fcmToken, notification, messageData);
         return firebaseMessaging.sendAll(messages);
     }
 
-    public BatchResponse push(String userId, Notification notification, Map<String, String> messageData, boolean dryRun) throws FirebaseMessagingException, Exception {
+    public BatchResponse push(String userId, Notification notification, Map<String, String> messageData, boolean dryRun) throws Exception {
         FcmToken fcmToken = fcmTokenRepository.findById(userId).orElseThrow(() -> new Exception("Token not found"));
         List<Message> messages = buildMessages(fcmToken, notification, messageData);
         return firebaseMessaging.sendAll(messages, dryRun);

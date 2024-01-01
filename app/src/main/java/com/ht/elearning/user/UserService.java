@@ -18,24 +18,19 @@ public class UserService {
     private final AppProcessor appProcessor;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository repository;
-    public User findUserById(String userId) {
+
+    public User findById(String userId) {
         return repository.findById(userId).orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
     }
 
-    public boolean deleteUserById(String userId) {
-        try {
-            var exists = repository.existsById(userId);
-            if (!exists) throw new HttpException("User not found", HttpStatus.BAD_REQUEST);
-            repository.deleteById(userId);
-            return true;
-        } catch (HttpException e) {
-            throw new HttpException(e.getMessage(), e.getStatus());
-        } catch (Exception e) {
-            throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
+    public boolean deleteById(String userId) {
+        var exists = repository.existsById(userId);
+        if (!exists) throw new HttpException("User not found", HttpStatus.BAD_REQUEST);
+        repository.deleteById(userId);
+        return true;
     }
 
-    public User createUser(CreateUserDto createUserDto) {
+    public User create(CreateUserDto createUserDto) {
         try {
             var exists = repository.existsByEmail(createUserDto.getEmail());
             if (exists) throw new HttpException("Email is already registered", HttpStatus.BAD_REQUEST);
@@ -66,24 +61,18 @@ public class UserService {
     }
 
 
-    public User updateUser(String userId, UpdateUserDto updateUserDto) {
-        try {
-            User user = repository.findById(userId)
-                    .orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
+    public User update(String userId, UpdateUserDto updateUserDto) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
 
-            Optional.ofNullable(updateUserDto.getAvatarUrl()).ifPresent(user::setAvatarUrl);
-            Optional.ofNullable(updateUserDto.getPassword()).ifPresent(password -> user.setPassword(passwordEncoder.encode(password)));
-            Optional.ofNullable(updateUserDto.getRole()).ifPresent(user::setRole);
-            Optional.ofNullable(updateUserDto.getFirstName()).ifPresent(user::setFirstName);
-            Optional.ofNullable(updateUserDto.getLastName()).ifPresent(user::setLastName);
+        Optional.ofNullable(updateUserDto.getAvatarUrl()).ifPresent(user::setAvatarUrl);
+        Optional.ofNullable(updateUserDto.getPassword()).ifPresent(password -> user.setPassword(passwordEncoder.encode(password)));
+        Optional.ofNullable(updateUserDto.getRole()).ifPresent(user::setRole);
+        Optional.ofNullable(updateUserDto.getFirstName()).ifPresent(user::setFirstName);
+        Optional.ofNullable(updateUserDto.getLastName()).ifPresent(user::setLastName);
 
-            repository.save(user);
+        repository.save(user);
 
-            return user;
-        } catch (HttpException e) {
-            throw new HttpException(e.getMessage(), e.getStatus());
-        } catch (Exception e) {
-            throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
+        return user;
     }
 }

@@ -6,6 +6,7 @@ import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.mail.MailService;
 import com.ht.elearning.notification.NotificationService;
+import com.ht.elearning.post.Post;
 import com.ht.elearning.push_notification.PushNotificationService;
 import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserRepository;
@@ -20,7 +21,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -32,8 +35,9 @@ public class NotificationProcessor {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
+
     @Async
-    public void processClassroomInvitation(Invitation invitation, Classroom classroom) throws MessagingException {
+    public void processClassroomInvitation(Invitation invitation, Classroom classroom) {
         var urlString = "https://example.com/classroom/invitation?invite_code=" + classroom.getInviteCode();
         URL acceptUrl = null;
         var user = userRepository.findByEmail(invitation.getEmail()).orElse(null);
@@ -72,7 +76,7 @@ public class NotificationProcessor {
                     } catch (Exception e) {
                         logger.warn(
                                 "Handle[processClassroomInvitation] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                                target, notification.getTitle(), notification.getContent(),notification.getImageUrl(), e.getMessage()
+                                target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
                         );
                     }
                 }
@@ -136,7 +140,7 @@ public class NotificationProcessor {
         } catch (Exception e) {
             logger.warn(
                     "Handle[processClassroomJoining] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                    target, notification.getTitle(), notification.getContent(),notification.getImageUrl(), e.getMessage()
+                    target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
             );
         }
     }
@@ -173,7 +177,53 @@ public class NotificationProcessor {
         } catch (Exception e) {
             logger.warn(
                     "Handle[processClassroomLeaving] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                    target, notification.getTitle(), notification.getContent(),notification.getImageUrl(), e.getMessage()
+                    target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+            );
+        }
+    }
+
+    @Async
+    public void processNewPost(Post savedPost) {
+        var classroom = savedPost.getClassroom();
+        var members = new ArrayList<User>();
+        members.add(classroom.getOwner());
+        members.addAll(classroom.getUsers());
+        members.addAll(classroom.getProviders());
+        var memberIds = members.stream().map(User::getId).toList();
+
+        var notifications = notificationService.createNewPostNotifications(members, savedPost.getAuthor(), classroom);
+
+        socketIOServer.getNamespace("/notification")
+                .getAllClients()
+                .stream()
+                .filter(client -> {
+                    String authId = client.getHandshakeData().getHttpHeaders().get("x-auth-id");
+                    return memberIds.contains(authId);
+                })
+                .forEach(client -> {
+                    client.sendEvent("notification:create");
+                });
+
+        var notification = notifications.get(0);
+
+        try {
+            var batchResponse = pushNotificationService.push(
+                    memberIds,
+                    Notification.builder()
+                            .setBody(notification.getContent())
+                            .setTitle(notification.getTitle())
+                            .setImage(notification.getImageUrl())
+                            .build(),
+                    null
+            );
+            logger.debug(
+                    "Handle[processClassroomLeaving] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+            );
+        } catch (Exception e) {
+            logger.warn(
+                    "Handle[processClassroomLeaving] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    memberIds, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
             );
         }
     }

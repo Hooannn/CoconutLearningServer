@@ -7,7 +7,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.Reference;
 
+import java.util.List;
 import java.util.Set;
+
 @EqualsAndHashCode(callSuper = true)
 @Builder
 @Data
@@ -45,7 +47,7 @@ public class Classroom extends BaseEntity {
             joinColumns = @JoinColumn(name = "classroom_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "provider_id", nullable = false)
     )
-    private Set<User> providers;
+    private List<User> providers;
 
     @ManyToMany
     @JoinTable(
@@ -53,8 +55,8 @@ public class Classroom extends BaseEntity {
             joinColumns = @JoinColumn(name = "classroom_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
     )
-    private Set<User> users;
+    private List<User> users;
 
-    @OneToMany(mappedBy = "classroom")
-    private Set<Invitation> invitations;
+    @OneToMany(mappedBy = "classroom", targetEntity = Invitation.class)
+    private List<Invitation> invitations;
 }

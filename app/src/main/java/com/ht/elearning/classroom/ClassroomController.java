@@ -20,9 +20,9 @@ public class ClassroomController {
     private final ClassroomService service;
     @PostMapping
     @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
-    public ResponseEntity<Response<Classroom>> createClassroom(@Valid @RequestBody CreateClassroomDto createClassroomDto) {
+    public ResponseEntity<Response<Classroom>> create(@Valid @RequestBody CreateClassroomDto createClassroomDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classroom = service.createClassroom(createClassroomDto, authentication.getPrincipal().toString());
+        var classroom = service.create(createClassroomDto, authentication.getPrincipal().toString());
 
         return ResponseEntity.created(null).body(
                 new Response<>(
@@ -35,9 +35,9 @@ public class ClassroomController {
     }
 
     @GetMapping("{classroomId}")
-    public ResponseEntity<Response<Classroom>> findClassroom(@PathVariable String classroomId) {
+    public ResponseEntity<Response<Classroom>> findByClassroomId(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classroom = service.findClassroom(classroomId, authentication.getPrincipal().toString());
+        var classroom = service.find(classroomId, authentication.getPrincipal().toString());
 
         return ResponseEntity.ok(
                 new Response<>(

@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,7 @@ public class FileService {
     private final UserService userService;
 
     public List<File> upload(List<MultipartFile> files, String createdBy) {
-        var creator = userService.findUserById(createdBy);
+        var creator = userService.findById(createdBy);
         return files.stream().map(file -> upload(file, creator)).toList();
     }
 
@@ -45,6 +44,27 @@ public class FileService {
 
         fileRepository.delete(file);
         return true;
+    }
+
+
+    public File update(String fileId, MultipartFile multipartFile, String createdBy) {
+        var file = fileRepository.findByIdAndCreatorId(fileId, createdBy).orElseThrow(() -> new HttpException("File not found", HttpStatus.BAD_REQUEST));
+        String endpoint = "/" + fileId;
+        var uploadResponse = fileVolumeApiClient.post()
+                .uri(endpoint)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData("file", MultipartFileConverter.convert(multipartFile)))
+                .retrieve()
+                .bodyToMono(UploadFileResponse.class)
+                .block();
+
+        if (uploadResponse == null) throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+
+        file.setETag(uploadResponse.getETag());
+        file.setSize(uploadResponse.getSize());
+        file.setName(uploadResponse.getName());
+
+        return fileRepository.save(file);
     }
 
     private File upload(MultipartFile file, User creator) {

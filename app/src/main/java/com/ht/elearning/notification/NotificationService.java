@@ -11,9 +11,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationService {
     private final NotificationRepository repository;
+
+
     public List<Notification> getMyNotifications(String userId) {
         return repository.findAllByRecipientId(userId);
     }
+
 
     public Notification createClassroomInvitation(User user, Classroom classroom) {
         var urlString = "https://example.com/classroom/invitation?invite_code=" + classroom.getInviteCode();
@@ -35,6 +38,7 @@ public class NotificationService {
         return repository.save(notification);
     }
 
+
     public Notification createJoiningClassroomNotification(User user, Classroom classroom) {
         var urlString = "https://example.com/classroom/" + classroom.getId();
 
@@ -54,6 +58,7 @@ public class NotificationService {
         return repository.save(notification);
     }
 
+
     public Notification createLeavingClassroomNotification(User user, Classroom classroom) {
         var urlString = "https://example.com/classroom/" + classroom.getId();
 
@@ -66,5 +71,22 @@ public class NotificationService {
                 .build();
 
         return repository.save(notification);
+    }
+
+
+    public List<Notification> createNewPostNotifications(List<User> recipients, User author, Classroom classroom) {
+        var urlString = "https://example.com/classroom/" + classroom.getId();
+
+        List<Notification> notifications = recipients.stream().map(
+                recipient -> Notification.builder()
+                        .title("Classroom: '" + classroom.getName() + "'")
+                        .content(author.getFullName() + " created a new post.")
+                        .redirectUrl(urlString)
+                        .recipient(recipient)
+                        .imageUrl(author.getAvatarUrl())
+                        .build()
+        ).toList();
+
+        return repository.saveAll(notifications);
     }
 }

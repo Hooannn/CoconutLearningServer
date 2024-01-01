@@ -1,6 +1,9 @@
-package com.ht.elearning.file;
+package com.ht.elearning.comment;
 
+import com.ht.elearning.comment.dtos.CreateCommentDto;
+import com.ht.elearning.comment.dtos.UpdateCommentDto;
 import com.ht.elearning.config.Response;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,55 +11,52 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping(path = "/api/v1/files")
-public class FileController {
-    private final FileService fileService;
+@RequestMapping(path = "/api/v1/comments")
+public class CommentController {
+    private final CommentService commentService;
 
 
-    @PostMapping("upload")
-    public ResponseEntity<Response<List<File>>> upload(@RequestPart("files") List<MultipartFile> files) {
+    @PostMapping
+    public ResponseEntity<Response<Comment>> create(@Valid @RequestBody CreateCommentDto createCommentDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var uploadedFiles = fileService.upload(files, authentication.getPrincipal().toString());
+        var comment = commentService.create(createCommentDto, authentication.getPrincipal().toString());
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Uploaded successfully",
+                        "Created successfully",
                         true,
-                        uploadedFiles
+                        comment
                 )
         );
     }
 
 
-    @PutMapping("{fileId}")
-    public ResponseEntity<Response<File>> update(@RequestPart("files") List<MultipartFile> files, @PathVariable String fileId) {
+    @PutMapping("{commentId}")
+    public ResponseEntity<Response<Comment>> update(@Valid @RequestBody UpdateCommentDto updateCommentDto, @PathVariable String commentId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var file = fileService.update(fileId, files.get(0), authentication.getPrincipal().toString());
+        var comment = commentService.update(updateCommentDto, commentId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
                         "Updated successfully",
                         true,
-                        file
+                        comment
                 )
         );
     }
 
 
-    @DeleteMapping("{fileId}")
-    public ResponseEntity<Response<List<File>>> remove(@PathVariable String fileId) {
+    @DeleteMapping("{commentId}")
+    public ResponseEntity<Response<?>> delete(@PathVariable String commentId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = fileService.remove(fileId, authentication.getPrincipal().toString());
+        var success = commentService.delete(commentId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Removed",
+                        "Deleted",
                         success,
                         null
                 )

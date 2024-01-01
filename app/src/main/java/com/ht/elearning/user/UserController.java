@@ -23,7 +23,7 @@ public class UserController {
     @PreAuthorize("permitAll()")
     public ResponseEntity<Response<User>> getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var user = service.findUserById(authentication.getPrincipal().toString());
+        var user = service.findById(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -37,8 +37,8 @@ public class UserController {
 
     @GetMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:read')")
-    public ResponseEntity<Response<User>> findUser(@PathVariable String userId) {
-        var user = service.findUserById(userId);
+    public ResponseEntity<Response<User>> findByUserId(@PathVariable String userId) {
+        var user = service.findById(userId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -51,8 +51,8 @@ public class UserController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('admin:create')")
-    public ResponseEntity<Response<User>> createUser(@Valid @RequestBody CreateUserDto createUserDto) {
-        var user = service.createUser(createUserDto);
+    public ResponseEntity<Response<User>> create(@Valid @RequestBody CreateUserDto createUserDto) {
+        var user = service.create(createUserDto);
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
@@ -65,8 +65,8 @@ public class UserController {
 
     @PatchMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:update')")
-    public ResponseEntity<Response<User>> updateUser(@PathVariable String userId, @Valid @RequestBody UpdateUserDto updateUserDto) {
-        User user = service.updateUser(userId, updateUserDto);
+    public ResponseEntity<Response<User>> update(@PathVariable String userId, @Valid @RequestBody UpdateUserDto updateUserDto) {
+        User user = service.update(userId, updateUserDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.CREATED.value(),
@@ -80,8 +80,8 @@ public class UserController {
 
     @DeleteMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:delete')")
-    public ResponseEntity<Response<String>> deleteUser(@PathVariable String userId) {
-        var success = service.deleteUserById(userId);
+    public ResponseEntity<Response<String>> delete(@PathVariable String userId) {
+        var success = service.deleteById(userId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

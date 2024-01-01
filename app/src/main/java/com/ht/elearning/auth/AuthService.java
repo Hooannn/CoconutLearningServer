@@ -22,14 +22,14 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    @Value("${application.security.jwt.refresh-token.expiration}")
-    private long refreshExpiration;
     private final AppProcessor appProcessor;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final RedisService redisService;
+    @Value("${application.security.jwt.refresh-token.expiration}")
+    private long refreshExpiration;
 
     public AuthenticationResponse register(RegisterDto registerDto) {
         try {
@@ -61,24 +61,18 @@ public class AuthService {
     }
 
     public AuthenticationResponse authenticate(AuthenticateDto authenticateDto) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            authenticateDto.getEmail(),
-                            authenticateDto.getPassword()
-                    )
-            );
-            var user = userRepository.findByEmail(authenticateDto.getEmail()).orElseThrow();
-            return AuthenticationResponse
-                    .builder()
-                    .credentials(getCredentials(user))
-                    .user(user)
-                    .build();
-        } catch (HttpException e) {
-            throw new HttpException(e.getMessage(), e.getStatus());
-        } catch (AuthenticationException e) {
-            throw new HttpException(e.getMessage(), HttpStatus.FORBIDDEN);
-        }
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        authenticateDto.getEmail(),
+                        authenticateDto.getPassword()
+                )
+        );
+        var user = userRepository.findByEmail(authenticateDto.getEmail()).orElseThrow();
+        return AuthenticationResponse
+                .builder()
+                .credentials(getCredentials(user))
+                .user(user)
+                .build();
     }
 
 
@@ -121,46 +115,34 @@ public class AuthService {
     }
 
     public boolean resetPassword(ResetPasswordDto resetPasswordDto) {
-        try {
-            var validSignature = redisService.getValue("reset_password_signature:" + resetPasswordDto.getEmail());
-            var signature = resetPasswordDto.getSignature();
-            if (signature.equals(validSignature)) {
-                var user = userRepository.findByEmail(resetPasswordDto.getEmail()).orElseThrow();
-                user.setPassword(passwordEncoder.encode(resetPasswordDto.getNewPassword()));
-                userRepository.save(user);
-                redisService.deleteValue("refresh_token:" + user.getId());
-                redisService.deleteValue("reset_password_signature:" + user.getEmail());
-                return true;
-            }
-            throw new HttpException("Bad credentials", HttpStatus.FORBIDDEN);
-        } catch (HttpException e) {
-            throw new HttpException(e.getMessage(), e.getStatus());
-        } catch (AuthenticationException e) {
-            throw new HttpException(e.getMessage(), HttpStatus.FORBIDDEN);
+        var validSignature = redisService.getValue("reset_password_signature:" + resetPasswordDto.getEmail());
+        var signature = resetPasswordDto.getSignature();
+        if (signature.equals(validSignature)) {
+            var user = userRepository.findByEmail(resetPasswordDto.getEmail()).orElseThrow();
+            user.setPassword(passwordEncoder.encode(resetPasswordDto.getNewPassword()));
+            userRepository.save(user);
+            redisService.deleteValue("refresh_token:" + user.getId());
+            redisService.deleteValue("reset_password_signature:" + user.getEmail());
+            return true;
         }
+        throw new HttpException("Bad credentials", HttpStatus.FORBIDDEN);
     }
 
     public Credentials refresh(RefreshDto refreshDto) {
-        try {
-            final String ERROR_MESSAGE = "Bad credentials";
-            var token = refreshDto.getToken();
-            var isValidToken = jwtService.isTokenValid(token, true);
-            if (isValidToken) {
-                String sub = jwtService.extractSub(token, true);
-                String storedToken = redisService.getValue("refresh_token:" + sub);
-                if (storedToken.equals(token)) {
-                    var user = userRepository
-                            .findById(sub)
-                            .orElseThrow(() -> new HttpException(ERROR_MESSAGE, HttpStatus.FORBIDDEN));
-                    return getCredentials(user);
-                }
+        final String ERROR_MESSAGE = "Bad credentials";
+        var token = refreshDto.getToken();
+        var isValidToken = jwtService.isTokenValid(token, true);
+        if (isValidToken) {
+            String sub = jwtService.extractSub(token, true);
+            String storedToken = redisService.getValue("refresh_token:" + sub);
+            if (storedToken.equals(token)) {
+                var user = userRepository
+                        .findById(sub)
+                        .orElseThrow(() -> new HttpException(ERROR_MESSAGE, HttpStatus.FORBIDDEN));
+                return getCredentials(user);
             }
-            throw new HttpException(ERROR_MESSAGE, HttpStatus.FORBIDDEN);
-        } catch (HttpException e) {
-            throw new HttpException(e.getMessage(), e.getStatus());
-        } catch (Exception e) {
-            throw new HttpException(e.getMessage(), HttpStatus.FORBIDDEN);
         }
+        throw new HttpException(ERROR_MESSAGE, HttpStatus.FORBIDDEN);
     }
 
     private Credentials getCredentials(User user) {
