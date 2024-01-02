@@ -37,6 +37,9 @@ public class Classroom extends BaseEntity {
     private String room;
     private String course;
 
+    @Column(name = "cover_image_url")
+    private String coverImageUrl;
+
     @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;

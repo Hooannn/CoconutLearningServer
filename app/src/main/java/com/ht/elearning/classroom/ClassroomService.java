@@ -37,6 +37,7 @@ public class ClassroomService {
                 .builder()
                 .name(createClassroomDto.getName())
                 .room(createClassroomDto.getRoom())
+                .coverImageUrl(createClassroomDto.getCoverImageUrl())
                 .description(createClassroomDto.getDescription())
                 .course(createClassroomDto.getCourse())
                 .inviteCode(inviteCode)

@@ -3,6 +3,8 @@ package com.ht.elearning.processor;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.google.firebase.messaging.Notification;
 import com.ht.elearning.classroom.Classroom;
+import com.ht.elearning.classwork.Classwork;
+import com.ht.elearning.comment.Comment;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.mail.MailService;
 import com.ht.elearning.notification.NotificationService;
@@ -12,6 +14,7 @@ import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserRepository;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -191,7 +194,7 @@ public class NotificationProcessor {
         members.addAll(classroom.getProviders());
         var memberIds = members.stream().map(User::getId).toList();
 
-        var notifications = notificationService.createNewPostNotifications(members, savedPost.getAuthor(), classroom);
+        var notifications = notificationService.createNewPostNotifications(members, savedPost);
 
         socketIOServer.getNamespace("/notification")
                 .getAllClients()
@@ -217,14 +220,80 @@ public class NotificationProcessor {
                     null
             );
             logger.debug(
-                    "Handle[processClassroomLeaving] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    "Handle[processNewPost] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
                     batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
             );
         } catch (Exception e) {
             logger.warn(
-                    "Handle[processClassroomLeaving] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    "Handle[processNewPost] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
                     memberIds, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
             );
         }
+    }
+
+
+    @Async
+    public void processNewComment(Comment savedComment) {
+        var classroom = savedComment.getPost().getClassroom();
+        var members = new ArrayList<User>();
+        members.add(classroom.getOwner());
+        members.addAll(classroom.getUsers());
+        members.addAll(classroom.getProviders());
+        var memberIds = members.stream().map(User::getId).toList();
+
+        var notifications = notificationService.createNewCommentNotifications(members, savedComment);
+
+        socketIOServer.getNamespace("/notification")
+                .getAllClients()
+                .stream()
+                .filter(client -> {
+                    String authId = client.getHandshakeData().getHttpHeaders().get("x-auth-id");
+                    return memberIds.contains(authId);
+                })
+                .forEach(client -> {
+                    client.sendEvent("notification:create");
+                });
+
+        var notification = notifications.get(0);
+
+        try {
+            var batchResponse = pushNotificationService.push(
+                    memberIds,
+                    Notification.builder()
+                            .setBody(notification.getContent())
+                            .setTitle(notification.getTitle())
+                            .setImage(notification.getImageUrl())
+                            .build(),
+                    null
+            );
+            logger.debug(
+                    "Handle[processNewComment] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+            );
+        } catch (Exception e) {
+            logger.warn(
+                    "Handle[processNewComment] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    memberIds, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+            );
+        }
+    }
+
+
+    @Async
+    public void processNewClasswork(Classwork savedClasswork) {
+        //TODO: implement
+        var classroom = savedClasswork.getClassroom();
+        var assignees = savedClasswork.getAssignees();
+        var author = savedClasswork.getAuthor();
+
+        CompletableFuture<Void> createNotificationsFuture = CompletableFuture.runAsync(() -> {
+
+        });
+
+        CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
+
+        });
+
+        CompletableFuture.allOf(createNotificationsFuture, sendMailFuture).join();
     }
 }

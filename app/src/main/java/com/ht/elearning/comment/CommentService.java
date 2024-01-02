@@ -5,6 +5,7 @@ import com.ht.elearning.comment.dtos.CreateCommentDto;
 import com.ht.elearning.comment.dtos.UpdateCommentDto;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.post.PostService;
+import com.ht.elearning.processor.NotificationProcessor;
 import com.ht.elearning.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final ClassroomService classroomService;
     private final UserService userService;
+    private final NotificationProcessor notificationProcessor;
     private final PostService postService;
 
     public Comment create(CreateCommentDto createCommentDto, String authorId) {
@@ -36,7 +38,11 @@ public class CommentService {
                 .post(post)
                 .build();
 
-        return commentRepository.save(comment);
+        var savedComment = commentRepository.save(comment);
+
+        notificationProcessor.processNewComment(savedComment);
+
+        return savedComment;
     }
 
 

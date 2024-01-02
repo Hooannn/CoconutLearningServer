@@ -1,6 +1,8 @@
 package com.ht.elearning.notification;
 
 import com.ht.elearning.classroom.Classroom;
+import com.ht.elearning.comment.Comment;
+import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -74,13 +76,34 @@ public class NotificationService {
     }
 
 
-    public List<Notification> createNewPostNotifications(List<User> recipients, User author, Classroom classroom) {
+    public List<Notification> createNewPostNotifications(List<User> recipients, Post savedPost) {
+        var classroom = savedPost.getClassroom();
+        var author = savedPost.getAuthor();
         var urlString = "https://example.com/classroom/" + classroom.getId();
 
         List<Notification> notifications = recipients.stream().map(
                 recipient -> Notification.builder()
                         .title("Classroom: '" + classroom.getName() + "'")
-                        .content(author.getFullName() + " created a new post.")
+                        .content(author.getFullName() + " created a new post: " + "\"" + savedPost.getBody() + "\"")
+                        .redirectUrl(urlString)
+                        .recipient(recipient)
+                        .imageUrl(author.getAvatarUrl())
+                        .build()
+        ).toList();
+
+        return repository.saveAll(notifications);
+    }
+
+
+    public List<Notification> createNewCommentNotifications(List<User> recipients, Comment savedComment) {
+        var classroom = savedComment.getPost().getClassroom();
+        var author = savedComment.getAuthor();
+        var urlString = "https://example.com/classroom/" + classroom.getId();
+
+        List<Notification> notifications = recipients.stream().map(
+                recipient -> Notification.builder()
+                        .title("Classroom: '" + classroom.getName() + "'")
+                        .content(author.getFullName() + " commented to post: " + "\"" + savedComment.getBody() + "\"")
                         .redirectUrl(urlString)
                         .recipient(recipient)
                         .imageUrl(author.getAvatarUrl())
