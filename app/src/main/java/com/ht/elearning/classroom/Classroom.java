@@ -19,7 +19,7 @@ import java.util.Set;
 @Table(
         name = "classrooms",
         indexes = {
-                @Index(name = "idx_owner", columnList = "owner_id")
+                @Index(name = "idx_classroom_owner", columnList = "owner_id")
         }
 )
 public class Classroom extends BaseEntity {

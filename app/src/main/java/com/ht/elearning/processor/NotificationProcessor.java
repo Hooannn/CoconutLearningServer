@@ -14,7 +14,6 @@ import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserRepository;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
-import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -28,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -281,17 +281,63 @@ public class NotificationProcessor {
 
     @Async
     public void processNewClasswork(Classwork savedClasswork) {
-        //TODO: implement
         var classroom = savedClasswork.getClassroom();
         var assignees = savedClasswork.getAssignees();
         var author = savedClasswork.getAuthor();
 
+        //Create notification for assignees and other providers
         CompletableFuture<Void> createNotificationsFuture = CompletableFuture.runAsync(() -> {
+            var providers = classroom.getProviders().stream().filter(provider -> !provider.getId().equals(author.getId())).toList();
+            List<User> recipients = Stream.concat(providers.stream(), assignees.stream()).toList();
+            var notifications = notificationService.createNewClassworkNotifications(recipients, savedClasswork);
+            var notification = notifications.get(0);
+            var recipientIds = recipients.stream().map(User::getId).toList();
+            socketIOServer.getNamespace("/notification")
+                    .getAllClients()
+                    .stream()
+                    .filter(client -> {
+                        String authId = client.getHandshakeData().getHttpHeaders().get("x-auth-id");
+                        return recipientIds.contains(authId);
+                    })
+                    .forEach(client -> {
+                        client.sendEvent("notification:create");
+                    });
 
+            try {
+                var batchResponse = pushNotificationService.push(
+                        recipientIds,
+                        Notification.builder()
+                                .setBody(notification.getContent())
+                                .setTitle(notification.getTitle())
+                                .setImage(notification.getImageUrl())
+                                .build(),
+                        null
+                );
+                logger.debug(
+                        "Handle[processNewClasswork] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                        batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+                );
+            } catch (Exception e) {
+                logger.warn(
+                        "Handle[processNewClasswork] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                        recipientIds, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                );
+            }
         });
 
+        //Just send mail for assignees
         CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
-
+            String mailSubject = "Elearning - Classroom: " + savedClasswork.getClassroom().getName();
+            assignees.forEach(assignee -> {
+                try {
+                    mailService.sendNewClassworkMail(assignee.getEmail(), mailSubject, savedClasswork);
+                } catch (MessagingException e) {
+                    logger.warn(
+                            "Handle[processNewClasswork] - Catch exception while sending mail - To[{}] - Subject[{}] - ClassworkId[{}]",
+                            assignee.getEmail(), mailSubject, savedClasswork.getId()
+                    );
+                }
+            });
         });
 
         CompletableFuture.allOf(createNotificationsFuture, sendMailFuture).join();

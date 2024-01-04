@@ -14,24 +14,25 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @RequiredArgsConstructor
 public class SocketIOConfiguration {
+    private final JwtService jwtService;
     @Value("${socket-server.host}")
     private String host;
     @Value("${socket-server.port}")
     private Integer port;
 
-    private final JwtService jwtService;
     @Bean
     public SocketIOServer socketIOServer() {
         com.corundumstudio.socketio.Configuration config = new com.corundumstudio.socketio.Configuration();
         config.setHostname(host);
         config.setPort(port);
+        config.setOrigin("*");
         config.setAuthorizationListener(authorizationListener());
         return new SocketIOServer(config);
     }
+
     private AuthorizationListener authorizationListener() {
         return handshakeData -> {
-            HttpHeaders headers = handshakeData.getHttpHeaders();
-            String authorization = headers.get("Authorization");
+            String authorization = handshakeData.getSingleUrlParam("access_token");
             if (authorization == null) return AuthorizationResult.FAILED_AUTHORIZATION;
             var subject = jwtService.extractSub(authorization);
             var isAuthorized = jwtService.isTokenValid(authorization);

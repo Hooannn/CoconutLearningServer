@@ -15,7 +15,7 @@ import lombok.*;
 @Table(
         name = "classwork_categories",
         indexes = {
-                @Index(name = "idx_classroom", columnList = "classroom_id")
+                @Index(name = "idx_classwork_category_classroom", columnList = "classroom_id")
         }
 )
 public class ClassworkCategory extends BaseEntity {

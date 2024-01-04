@@ -14,7 +14,7 @@ import lombok.*;
 @Table(
         name = "files",
         indexes = {
-                @Index(name = "idx_creator", columnList = "creator_id")
+                @Index(name = "idx_file_creator", columnList = "creator_id")
         }
 )
 public class File extends BaseEntity {

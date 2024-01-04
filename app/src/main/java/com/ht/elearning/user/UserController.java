@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(path = "/api/v1/users")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@CrossOrigin
 public class UserController {
     private final UserService service;
+
     @GetMapping("/authenticated")
     @PreAuthorize("permitAll()")
     public ResponseEntity<Response<User>> getAuthenticatedUser() {

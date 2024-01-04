@@ -76,7 +76,7 @@ public class ClassroomService {
             throw new HttpException("Illegal request", HttpStatus.NOT_ACCEPTABLE);
 
         if (classroom.getUsers().stream().anyMatch(u -> u.getEmail().equals(inviteDto.getEmail()))
-                || classroom.getProviders().stream().anyMatch(u -> u.getId().equals(inviteDto.getEmail())))
+                || classroom.getProviders().stream().anyMatch(u -> u.getEmail().equals(inviteDto.getEmail())))
             throw new HttpException("User already joined", HttpStatus.BAD_REQUEST);
 
         if (invitationRepository.existsByEmailAndClassroomId(inviteDto.getEmail(), inviteDto.getClassId()))

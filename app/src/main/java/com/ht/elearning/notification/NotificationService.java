@@ -1,6 +1,7 @@
 package com.ht.elearning.notification;
 
 import com.ht.elearning.classroom.Classroom;
+import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
@@ -104,6 +105,25 @@ public class NotificationService {
                 recipient -> Notification.builder()
                         .title("Classroom: '" + classroom.getName() + "'")
                         .content(author.getFullName() + " commented to post: " + "\"" + savedComment.getBody() + "\"")
+                        .redirectUrl(urlString)
+                        .recipient(recipient)
+                        .imageUrl(author.getAvatarUrl())
+                        .build()
+        ).toList();
+
+        return repository.saveAll(notifications);
+    }
+
+
+    public List<Notification> createNewClassworkNotifications(List<User> recipients, Classwork savedClasswork) {
+        var classroom = savedClasswork.getClassroom();
+        var author = savedClasswork.getAuthor();
+        var urlString = "https://example.com/classroom/classwork/" + savedClasswork.getId();
+        
+        List<Notification> notifications = recipients.stream().map(
+                recipient -> Notification.builder()
+                        .title("Classroom: '" + classroom.getName() + "'")
+                        .content(author.getFullName() + " created new classwork: " + "\"" + savedClasswork.getTitle() + "\"")
                         .redirectUrl(urlString)
                         .recipient(recipient)
                         .imageUrl(author.getAvatarUrl())

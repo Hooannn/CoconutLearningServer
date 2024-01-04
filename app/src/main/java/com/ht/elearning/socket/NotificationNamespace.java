@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class NotificationNamespace {
     private static final Logger logger = LoggerFactory.getLogger(NotificationNamespace.class);
+
     @Autowired
     public NotificationNamespace(SocketIOServer server) {
         SocketIONamespace namespace = server.addNamespace("/notification");

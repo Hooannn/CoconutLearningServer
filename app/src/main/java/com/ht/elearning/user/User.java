@@ -1,6 +1,7 @@
 package com.ht.elearning.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.elearning.config.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,8 +22,13 @@ public class User extends BaseEntity implements UserDetails {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @JsonProperty("first_name")
     private String firstName;
+
+    @JsonProperty("last_name")
     private String lastName;
+
+    @JsonProperty("avatar_url")
     private String avatarUrl;
 
     @Column(columnDefinition = "BOOLEAN DEFAULT false")
@@ -58,19 +64,19 @@ public class User extends BaseEntity implements UserDetails {
     @Override
     @JsonIgnore
     public boolean isAccountNonExpired() {
-        return verified;
+        return true;
     }
 
     @Override
     @JsonIgnore
     public boolean isAccountNonLocked() {
-        return verified;
+        return true;
     }
 
     @Override
     @JsonIgnore
     public boolean isCredentialsNonExpired() {
-        return verified;
+        return true;
     }
 
     @Override

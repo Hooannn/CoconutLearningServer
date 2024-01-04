@@ -23,7 +23,6 @@ public class ClassworkService {
     private final ClassworkCategoryService classworkCategoryService;
     private final NotificationProcessor notificationProcessor;
     private final FileRepository fileRepository;
-    private final UserRepository userRepository;
     private final UserService userService;
 
 
@@ -39,9 +38,13 @@ public class ClassworkService {
         var classroom = classroomService.findById(classroomId);
         var isMember = classroomService.isMember(classroom, userId);
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
-        var category = classworkCategoryService.findById(createClassworkDto.getCategoryId());
+        var category = createClassworkDto.getCategoryId() != null ? classworkCategoryService.findByIdAndClassroomId(createClassworkDto.getCategoryId(), classroomId) : null;
         var files = fileRepository.findAllById(createClassworkDto.getFileIds());
-        var assignees = userRepository.findAllById(createClassworkDto.getAssigneeIds());
+
+        var assignees = classroom.getUsers().stream()
+                .filter(user -> createClassworkDto.getAssigneeIds().contains(user.getId()))
+                .toList();
+
         if (assignees.isEmpty()) throw new HttpException("Assignees must be specified", HttpStatus.BAD_REQUEST);
         var author = userService.findById(userId);
         var classwork = Classwork.builder()
@@ -66,16 +69,16 @@ public class ClassworkService {
 
 
     public Classwork update(UpdateClassworkDto updateClassworkDto, String classworkId, String classroomId, String userId) {
-        var isMember = classroomService.isMember(classroomId, userId);
+        var classroom = classroomService.findById(classroomId);
+        var isMember = classroomService.isMember(classroom, userId);
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
         var classwork = classworkRepository.findById(classworkId).orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
-
         Optional.ofNullable(updateClassworkDto.getTitle()).ifPresent(classwork::setTitle);
         Optional.ofNullable(updateClassworkDto.getDescription()).ifPresent(classwork::setDescription);
         Optional.of(updateClassworkDto.getScore()).ifPresent(classwork::setScore);
         Optional.ofNullable(updateClassworkDto.getDeadline()).ifPresent(classwork::setDeadline);
         Optional.ofNullable(updateClassworkDto.getCategoryId()).ifPresent(categoryId -> {
-            var category = classworkCategoryService.findById(updateClassworkDto.getCategoryId());
+            var category = classworkCategoryService.findByIdAndClassroomId(updateClassworkDto.getCategoryId(), classroomId);
             classwork.setCategory(category);
         });
 
@@ -85,19 +88,18 @@ public class ClassworkService {
         });
 
         Optional.ofNullable(updateClassworkDto.getAssigneeIds()).ifPresent(assigneeIds -> {
-            var assignees = userRepository.findAllById(updateClassworkDto.getAssigneeIds());
+            var assignees = classroom.getUsers().stream()
+                    .filter(user -> updateClassworkDto.getAssigneeIds().contains(user.getId()))
+                    .toList();
             if (assignees.isEmpty()) throw new HttpException("Assignees must be specified", HttpStatus.BAD_REQUEST);
             classwork.setAssignees(assignees);
         });
-        var savedClasswork = classworkRepository.save(classwork);
 
-        // handle notification
-
-        return savedClasswork;
+        return classworkRepository.save(classwork);
     }
 
 
-    public boolean deleteById(String classroomId, String classworkId, String userId) {
+    public boolean deleteById(String classworkId, String classroomId, String userId) {
         var isMember = classroomService.isMember(classroomId, userId);
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
         var classwork = classworkRepository.findById(classworkId)

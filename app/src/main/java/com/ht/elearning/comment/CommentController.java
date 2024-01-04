@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/v1/comments")
+@CrossOrigin
 public class CommentController {
     private final CommentService commentService;
 

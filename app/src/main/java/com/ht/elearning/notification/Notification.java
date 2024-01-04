@@ -17,7 +17,7 @@ import java.util.List;
 @Table(
         name = "notifications",
         indexes = {
-                @Index(name = "idx_recipient", columnList = "recipient_id")
+                @Index(name = "idx_notification_recipient", columnList = "recipient_id")
         }
 )
 public class Notification extends BaseEntity {

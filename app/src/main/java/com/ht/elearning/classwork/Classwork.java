@@ -1,6 +1,7 @@
 package com.ht.elearning.classwork;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.config.BaseEntity;
 import com.ht.elearning.file.File;
@@ -20,8 +21,8 @@ import java.util.List;
 @Table(
         name = "classwork",
         indexes = {
-                @Index(name = "idx_classroom", columnList = "classroom_id"),
-                @Index(name = "idx_category", columnList = "category_id")
+                @Index(name = "idx_classwork_classroom", columnList = "classroom_id"),
+                @Index(name = "idx_classwork_category", columnList = "category_id")
         }
 )
 public class Classwork extends BaseEntity {
@@ -57,6 +58,7 @@ public class Classwork extends BaseEntity {
     )
     private List<File> files;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "classroom_id", nullable = false)
     private Classroom classroom;

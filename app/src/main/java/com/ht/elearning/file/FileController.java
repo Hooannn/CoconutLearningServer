@@ -15,6 +15,7 @@ import java.util.List;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/v1/files")
+@CrossOrigin
 public class FileController {
     private final FileService fileService;
 

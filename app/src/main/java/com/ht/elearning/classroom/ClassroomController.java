@@ -16,8 +16,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/classrooms")
+@CrossOrigin
 public class ClassroomController {
     private final ClassroomService service;
+
     @PostMapping
     @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<Classroom>> create(@Valid @RequestBody CreateClassroomDto createClassroomDto) {

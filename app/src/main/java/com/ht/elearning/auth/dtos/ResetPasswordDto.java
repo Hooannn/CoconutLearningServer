@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.Length;
 
 @Data
 @Builder
@@ -19,7 +20,7 @@ public class ResetPasswordDto {
     private String email;
 
     @NotEmpty(message = "New password must not be empty")
-    @Min(value = 8, message = "New password must have at least 8 characters")
+    @Length(min = 6, message = "New password must have at least 6 characters")
     @JsonProperty("new_password")
     private String newPassword;
 

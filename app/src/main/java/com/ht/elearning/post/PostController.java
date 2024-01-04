@@ -17,6 +17,7 @@ import java.util.List;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/v1/posts")
+@CrossOrigin
 public class PostController {
     private final PostService postService;
 

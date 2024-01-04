@@ -21,7 +21,7 @@ import java.util.Set;
 @Table(
         name = "posts",
         indexes = {
-                @Index(name = "idx_classroom", columnList = "classroom_id")
+                @Index(name = "idx_post_classroom", columnList = "classroom_id")
         }
 )
 public class Post extends BaseEntity {

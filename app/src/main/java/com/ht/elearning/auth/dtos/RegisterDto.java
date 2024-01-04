@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.Length;
 
 @Data
 @Builder
@@ -13,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RegisterDto {
     @NotEmpty(message = "Password must not be empty")
-    @Min(value = 8, message = "Password must have at least 8 characters")
+    @Length(min = 6, message = "Password must have at least 6 characters")
     private String password;
 
     @NotEmpty(message = "Email must not be empty")

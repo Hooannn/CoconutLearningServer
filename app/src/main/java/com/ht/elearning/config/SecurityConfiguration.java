@@ -1,6 +1,8 @@
 package com.ht.elearning.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ht.elearning.jwt.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +20,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
@@ -27,6 +31,7 @@ import java.util.List;
 public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -43,6 +48,19 @@ public class SecurityConfiguration {
                 )
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
+                    httpSecurityExceptionHandlingConfigurer.authenticationEntryPoint((request, response, authException) -> {
+                        response.setContentType("application/json");
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+                        Map<String, Object> errorDetails = new HashMap<>();
+                        errorDetails.put("error", "Unauthorized");
+                        errorDetails.put("message", authException.getLocalizedMessage());
+
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        objectMapper.writeValue(response.getWriter(), errorDetails);
+                    });
+                })
         ;
 
         return http.build();

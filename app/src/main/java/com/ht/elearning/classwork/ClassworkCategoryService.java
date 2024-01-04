@@ -67,4 +67,9 @@ public class ClassworkCategoryService {
     public ClassworkCategory findById(String categoryId) {
         return classworkCategoryRepository.findById(categoryId).orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
     }
+
+
+    public ClassworkCategory findByIdAndClassroomId(String categoryId, String classroomId) {
+        return classworkCategoryRepository.findByIdAndClassroomId(categoryId, classroomId).orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
+    }
 }

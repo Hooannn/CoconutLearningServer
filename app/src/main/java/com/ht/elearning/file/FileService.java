@@ -37,10 +37,15 @@ public class FileService {
         var res = fileVolumeApiClient.delete()
                 .uri(endpoint)
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        response -> {
+                            throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
+                        })
                 .bodyToMono(RemoveFileResponse.class)
                 .block();
 
-        if (res == null) throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
+        if (res == null)
+            throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
 
         fileRepository.delete(file);
         return true;
@@ -55,10 +60,15 @@ public class FileService {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData("file", MultipartFileConverter.convert(multipartFile)))
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        response -> {
+                            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+                        })
                 .bodyToMono(UploadFileResponse.class)
                 .block();
 
-        if (uploadResponse == null) throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+        if (uploadResponse == null)
+            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
 
         file.setETag(uploadResponse.getETag());
         file.setSize(uploadResponse.getSize());
@@ -72,6 +82,10 @@ public class FileService {
                 .get()
                 .uri("/dir/assign")
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        response -> {
+                            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+                        })
                 .bodyToMono(ReadDirAssignResponse.class)
                 .block();
 
@@ -86,6 +100,10 @@ public class FileService {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData("file", MultipartFileConverter.convert(file)))
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        response -> {
+                            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+                        })
                 .bodyToMono(UploadFileResponse.class)
                 .block();
 

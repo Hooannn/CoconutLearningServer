@@ -3,6 +3,7 @@ package com.ht.elearning.classwork;
 import com.ht.elearning.classwork.dtos.CreateClassworkCategoryDto;
 import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkCategoryDto;
+import com.ht.elearning.classwork.dtos.UpdateClassworkDto;
 import com.ht.elearning.config.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.util.List;
 @Controller
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/v1/classwork")
+@CrossOrigin
 public class ClassworkController {
     private final ClassworkCategoryService classworkCategoryService;
     private final ClassworkService classworkService;
@@ -126,6 +128,45 @@ public class ClassworkController {
                         "Created successfully",
                         true,
                         classwork
+                )
+        );
+    }
+
+
+    @PutMapping("/{classroomId}/{classworkId}")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
+    public ResponseEntity<Response<Classwork>> update(
+            @Valid @RequestBody UpdateClassworkDto updateClassworkDto,
+            @PathVariable String classroomId,
+            @PathVariable String classworkId
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classwork = classworkService.update(updateClassworkDto, classworkId, classroomId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Updated successfully",
+                        true,
+                        classwork
+                )
+        );
+    }
+
+
+    @DeleteMapping("/{classroomId}/{classworkId}")
+    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
+    public ResponseEntity<Response<Classwork>> delete(
+            @PathVariable String classroomId,
+            @PathVariable String classworkId
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = classworkService.deleteById(classworkId, classroomId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Deleted",
+                        success,
+                        null
                 )
         );
     }
