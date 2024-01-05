@@ -20,6 +20,7 @@ public class PushNotificationService {
     private final FcmTokenRepository fcmTokenRepository;
     private final FirebaseMessaging firebaseMessaging;
 
+
     public FcmToken registerToken(RegisterTokenDto registerTokenDto, String userId) {
         FcmToken token = fcmTokenRepository.findById(userId).orElse(null);
         String value = registerTokenDto.getToken();
@@ -42,9 +43,19 @@ public class PushNotificationService {
         return fcmTokenRepository.save(token);
     }
 
+
     public FcmToken removeToken(RemoveTokenDto removeTokenDto, String userId) {
-        FcmToken token = fcmTokenRepository.findById(userId)
-                .orElseThrow(() -> new HttpException("Token not found", HttpStatus.BAD_REQUEST));
+        return removeToken(removeTokenDto, userId, true);
+    }
+
+
+    public FcmToken removeToken(RemoveTokenDto removeTokenDto, String userId, boolean throwOnFailure) {
+        FcmToken token = throwOnFailure ? fcmTokenRepository.findById(userId)
+                .orElseThrow(() -> new HttpException("Token not found", HttpStatus.BAD_REQUEST)) :
+                fcmTokenRepository.findById(userId).orElse(null);
+
+        if (token == null) return null;
+
         Platform platform = removeTokenDto.getPlatform();
         switch (platform) {
             case IOS -> token.setIos(null);
@@ -54,12 +65,14 @@ public class PushNotificationService {
         return fcmTokenRepository.save(token);
     }
 
+
     public BatchResponse push(List<String> userIds, Notification notification, Map<String, String> messageData) throws Exception {
         List<FcmToken> fcmTokens = fcmTokenRepository.findAllById(userIds);
         if (fcmTokens.isEmpty()) throw new Exception("Token not found");
         List<Message> messages = buildMessages(fcmTokens, notification, messageData);
         return firebaseMessaging.sendAll(messages);
     }
+
 
     public BatchResponse push(List<String> userIds, Notification notification, Map<String, String> messageData, boolean dryRun) throws Exception {
         List<FcmToken> fcmTokens = fcmTokenRepository.findAllById(userIds);
@@ -68,17 +81,20 @@ public class PushNotificationService {
         return firebaseMessaging.sendAll(messages, dryRun);
     }
 
+
     public BatchResponse push(String userId, Notification notification, Map<String, String> messageData) throws Exception {
         FcmToken fcmToken = fcmTokenRepository.findById(userId).orElseThrow(() -> new Exception("Token not found"));
         List<Message> messages = buildMessages(fcmToken, notification, messageData);
         return firebaseMessaging.sendAll(messages);
     }
 
+
     public BatchResponse push(String userId, Notification notification, Map<String, String> messageData, boolean dryRun) throws Exception {
         FcmToken fcmToken = fcmTokenRepository.findById(userId).orElseThrow(() -> new Exception("Token not found"));
         List<Message> messages = buildMessages(fcmToken, notification, messageData);
         return firebaseMessaging.sendAll(messages, dryRun);
     }
+
 
     private List<Message> buildMessages(FcmToken fcmToken, Notification notification, Map<String, String> messageData) {
         List<String> messageTokens = extractTokens(fcmToken);
@@ -94,6 +110,7 @@ public class PushNotificationService {
                 .toList();
     }
 
+
     private List<Message> buildMessages(List<FcmToken> fcmTokens, Notification notification, Map<String, String> messageData) {
         List<String> messageTokens = extractTokens(fcmTokens);
         return messageTokens
@@ -108,11 +125,13 @@ public class PushNotificationService {
                 .toList();
     }
 
+
     private List<String> extractTokens(FcmToken fcmToken) {
         return Stream.of(fcmToken.getIos(), fcmToken.getAndroid(), fcmToken.getWeb())
                 .filter(Objects::nonNull)
                 .toList();
     }
+
 
     private List<String> extractTokens(List<FcmToken> fcmTokens) {
         return fcmTokens

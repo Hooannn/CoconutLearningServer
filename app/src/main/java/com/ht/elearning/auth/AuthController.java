@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -125,6 +127,21 @@ public class AuthController {
                         "Refreshed successfully",
                         true,
                         credentials
+                )
+        );
+    }
+
+
+    @PostMapping("/sign-out")
+    public ResponseEntity<Response<?>> signOut(@Valid @RequestBody SignOutDto signOutDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = authService.signOut(signOutDto, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Signed out",
+                        success,
+                        null
                 )
         );
     }

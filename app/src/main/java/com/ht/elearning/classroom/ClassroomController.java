@@ -13,12 +13,47 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/classrooms")
 @CrossOrigin
 public class ClassroomController {
     private final ClassroomService service;
+
+
+    @GetMapping("teaching")
+    public ResponseEntity<Response<List<Classroom>>> findTeachingClassrooms() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classrooms = service.findTeachingClassrooms(authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Ok",
+                        true,
+                        classrooms
+                )
+        );
+    }
+
+
+    @GetMapping("registered")
+    public ResponseEntity<Response<List<Classroom>>> findRegisteredClassrooms() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classrooms = service.findRegisteredClassrooms(authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Ok",
+                        true,
+                        classrooms
+                )
+        );
+    }
+
 
     @PostMapping
     @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")

@@ -14,7 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +39,7 @@ public class ClassroomService {
                 .builder()
                 .name(createClassroomDto.getName())
                 .room(createClassroomDto.getRoom())
-                .coverImageUrl(createClassroomDto.getCoverImageUrl())
+                .coverImageUrl(createClassroomDto.getCoverImageUrl() == null ? null : "/Honors_thumb.jpg")
                 .description(createClassroomDto.getDescription())
                 .course(createClassroomDto.getCourse())
                 .inviteCode(inviteCode)
@@ -193,5 +195,17 @@ public class ClassroomService {
         return classroom.getUsers().stream().anyMatch(u -> u.getId().equals(userId))
                 || classroom.getOwner().getId().equals(userId)
                 || classroom.getProviders().stream().anyMatch(u -> u.getId().equals(userId));
+    }
+
+
+    public List<Classroom> findTeachingClassrooms(String userId) {
+        var teachingClassrooms = classroomRepository.findAllTeachingClassrooms(userId);
+        var createdClassrooms = classroomRepository.findAllByOwnerId(userId);
+        return Stream.concat(teachingClassrooms.stream(), createdClassrooms.stream()).toList();
+    }
+
+
+    public List<Classroom> findRegisteredClassrooms(String userId) {
+        return classroomRepository.findAllRegisteredClassrooms(userId);
     }
 }

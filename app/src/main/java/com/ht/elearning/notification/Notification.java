@@ -1,5 +1,6 @@
 package com.ht.elearning.notification;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.elearning.config.BaseEntity;
 import com.ht.elearning.user.User;
@@ -42,6 +43,7 @@ public class Notification extends BaseEntity {
     @Convert(converter = ActionListConverter.class)
     private List<Action> actions;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;

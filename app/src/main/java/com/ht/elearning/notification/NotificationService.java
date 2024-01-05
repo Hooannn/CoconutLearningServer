@@ -3,9 +3,11 @@ package com.ht.elearning.notification;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
+import com.ht.elearning.config.HttpException;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,8 +18,13 @@ public class NotificationService {
     private final NotificationRepository repository;
 
 
-    public List<Notification> getMyNotifications(String userId) {
+    public List<Notification> findMyNotifications(String userId) {
         return repository.findAllByRecipientId(userId);
+    }
+
+
+    public long countUnread(String userId) {
+        return repository.countByRecipientIdAndReadFalse(userId);
     }
 
 
@@ -119,7 +126,7 @@ public class NotificationService {
         var classroom = savedClasswork.getClassroom();
         var author = savedClasswork.getAuthor();
         var urlString = "https://example.com/classroom/classwork/" + savedClasswork.getId();
-        
+
         List<Notification> notifications = recipients.stream().map(
                 recipient -> Notification.builder()
                         .title("Classroom: '" + classroom.getName() + "'")
@@ -131,5 +138,26 @@ public class NotificationService {
         ).toList();
 
         return repository.saveAll(notifications);
+    }
+
+
+    public boolean deleteMyNotifications(String userId) {
+        repository.deleteAllByRecipientId(userId);
+        return true;
+    }
+
+
+    public boolean markAll(String userId) {
+        repository.markNotificationsAsRead(userId);
+        return true;
+    }
+
+
+    public boolean mark(String notificationId, String userId) {
+        var notification = repository.findByIdAndRecipientId(notificationId, userId)
+                .orElseThrow(() -> new HttpException("Notification not found", HttpStatus.BAD_REQUEST));
+        notification.setRead(true);
+        repository.save(notification);
+        return true;
     }
 }

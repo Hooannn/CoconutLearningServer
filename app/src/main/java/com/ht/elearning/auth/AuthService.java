@@ -5,6 +5,8 @@ import com.ht.elearning.auth.dtos.*;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.jwt.JwtService;
 import com.ht.elearning.processor.AppProcessor;
+import com.ht.elearning.push_notification.PushNotificationService;
+import com.ht.elearning.push_notification.dtos.RemoveTokenDto;
 import com.ht.elearning.redis.RedisService;
 import com.ht.elearning.user.Role;
 import com.ht.elearning.user.User;
@@ -25,7 +27,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +38,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final RedisService redisService;
+    private final PushNotificationService pushNotificationService;
     @Value("${application.security.jwt.refresh-token.expiration}")
     private long refreshExpiration;
 
@@ -96,6 +98,7 @@ public class AuthService {
         }
         var validSignature = redisService.getValue("account_signature:" + email);
         if (signature.equals(validSignature)) {
+            redisService.deleteValue("account_signature:" + email);
             user.setVerified(true);
             var savedUser = userRepository.save(user);
             try {
@@ -226,6 +229,18 @@ public class AuthService {
                 .credentials(getCredentials(user))
                 .user(user)
                 .build();
+    }
+
+
+    public boolean signOut(SignOutDto signOutDto, String userId) {
+        var user = userRepository.findById(userId).orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
+        redisService.deleteValue("refresh_token:" + user.getId());
+        pushNotificationService.removeToken(RemoveTokenDto
+                .builder()
+                .platform(signOutDto.getPlatform())
+                .build(), userId, false);
+
+        return true;
     }
 }
 
