@@ -28,6 +28,9 @@ public class Invitation extends BaseEntity {
             name = "classroom_id", nullable = false
     )
     private Classroom classroom;
+
+    @Enumerated(value = EnumType.STRING)
+    private InvitationType type;
 }
 
 @Data

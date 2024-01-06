@@ -20,4 +20,6 @@ public interface ClassroomRepository extends JpaRepository<Classroom, String> {
     List<Classroom> findAllRegisteredClassrooms(String userId);
 
     List<Classroom> findAllByOwnerId(String ownerId);
+
+    boolean existsByIdAndOwnerId(String classroomId, String userId);
 }

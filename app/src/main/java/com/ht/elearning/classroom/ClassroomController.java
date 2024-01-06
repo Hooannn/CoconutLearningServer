@@ -3,6 +3,8 @@ package com.ht.elearning.classroom;
 
 import com.ht.elearning.classroom.dtos.CreateClassroomDto;
 import com.ht.elearning.classroom.dtos.InviteDto;
+import com.ht.elearning.classroom.dtos.RemoveInviteDto;
+import com.ht.elearning.classroom.dtos.UpdateClassroomDto;
 import com.ht.elearning.config.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +58,6 @@ public class ClassroomController {
 
 
     @PostMapping
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<Classroom>> create(@Valid @RequestBody CreateClassroomDto createClassroomDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var classroom = service.create(createClassroomDto, authentication.getPrincipal().toString());
@@ -86,8 +87,52 @@ public class ClassroomController {
         );
     }
 
+    @PutMapping("{classroomId}")
+    public ResponseEntity<Response<?>> update(@Valid @RequestBody UpdateClassroomDto updateClassroomDto, @PathVariable String classroomId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classroom = service.update(updateClassroomDto, classroomId, authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Updated successfully",
+                        true,
+                        classroom
+                )
+        );
+    }
+
+    @DeleteMapping("{classroomId}")
+    public ResponseEntity<Response<?>> deleteById(@PathVariable String classroomId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = service.deleteById(classroomId, authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Deleted",
+                        success,
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/{classroomId}/remove/member/{memberId}")
+    public ResponseEntity<Response<?>> removeMember(@PathVariable String memberId, @PathVariable String classroomId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = service.removeMember(classroomId, memberId, authentication.getPrincipal().toString());
+
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        "Removed",
+                        success,
+                        null
+                )
+        );
+    }
+
     @PostMapping("/invite")
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<?>> invite(@Valid @RequestBody InviteDto inviteDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var success = service.invite(inviteDto, authentication.getPrincipal().toString());
@@ -102,6 +147,22 @@ public class ClassroomController {
         );
     }
 
+    @PostMapping("/invite/remove/{classroomId}")
+    public ResponseEntity<Response<?>> removeInvite(@Valid @RequestBody RemoveInviteDto removeInviteDto,
+                                                    @PathVariable String classroomId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = service.removeInvite(removeInviteDto, classroomId, authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Removed invite successfully",
+                        success,
+                        null
+                )
+        );
+    }
+
     @PostMapping("/join/{inviteCode}")
     public ResponseEntity<Response<Classroom>> join(@PathVariable String inviteCode) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -110,6 +171,20 @@ public class ClassroomController {
                 new Response<>(
                         HttpStatus.OK.value(),
                         "Successfully joined classroom",
+                        success,
+                        null
+                )
+        );
+    }
+
+    @PostMapping("/accept/{inviteCode}")
+    public ResponseEntity<Response<Classroom>> accept(@PathVariable String inviteCode) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = service.accept(inviteCode, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Accepted",
                         success,
                         null
                 )

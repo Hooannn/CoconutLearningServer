@@ -49,7 +49,7 @@ public class NotificationProcessor {
 
             CompletableFuture<Void> createNotificationFuture = CompletableFuture.runAsync(() -> {
                 if (user != null) {
-                    var notification = notificationService.createClassroomInvitation(user, classroom);
+                    var notification = notificationService.createClassroomInvitation(user, classroom, invitation);
                     var target = user.getId();
                     socketIOServer.getNamespace("/notification")
                             .getAllClients()

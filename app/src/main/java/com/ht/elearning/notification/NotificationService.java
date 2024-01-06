@@ -4,6 +4,8 @@ import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.invitation.Invitation;
+import com.ht.elearning.invitation.InvitationType;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
 import lombok.RequiredArgsConstructor;
@@ -28,17 +30,21 @@ public class NotificationService {
     }
 
 
-    public Notification createClassroomInvitation(User user, Classroom classroom) {
+    public Notification createClassroomInvitation(User user, Classroom classroom, Invitation invitation) {
         var urlString = "https://example.com/classroom/invitation?invite_code=" + classroom.getInviteCode();
 
         List<Action> actions = List.of(
-                Action.builder().title("Accept").description(null).callbackUrl("/api/v1/classrooms/join/" + classroom.getInviteCode()).build(),
+                Action.builder().title("Accept").description(null).callbackUrl("/api/v1/classrooms/accept/" + classroom.getInviteCode()).build(),
                 Action.builder().title("Refuse").description(null).callbackUrl("/api/v1/classrooms/refuse/" + classroom.getInviteCode()).build()
         );
 
+        String message = invitation.getType() == InvitationType.PROVIDER ?
+                "You are invited to teach the class: '" + classroom.getName() + "'"
+                :
+                "You are invited to join the class: '" + classroom.getName() + "'";
         Notification notification = Notification.builder()
                 .title("Invitation")
-                .content("You are invited to join the class: '" + classroom.getName() + "'")
+                .content(message)
                 .redirectUrl(urlString)
                 .recipient(user)
                 .actions(actions)
