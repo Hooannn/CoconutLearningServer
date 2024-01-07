@@ -22,13 +22,13 @@ import java.util.List;
 @RequestMapping("/api/v1/classrooms")
 @CrossOrigin
 public class ClassroomController {
-    private final ClassroomService service;
+    private final ClassroomService classroomService;
 
 
     @GetMapping("teaching")
     public ResponseEntity<Response<List<Classroom>>> findTeachingClassrooms() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classrooms = service.findTeachingClassrooms(authentication.getPrincipal().toString());
+        var classrooms = classroomService.findTeachingClassrooms(authentication.getPrincipal().toString());
 
         return ResponseEntity.ok(
                 new Response<>(
@@ -44,7 +44,7 @@ public class ClassroomController {
     @GetMapping("registered")
     public ResponseEntity<Response<List<Classroom>>> findRegisteredClassrooms() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classrooms = service.findRegisteredClassrooms(authentication.getPrincipal().toString());
+        var classrooms = classroomService.findRegisteredClassrooms(authentication.getPrincipal().toString());
 
         return ResponseEntity.ok(
                 new Response<>(
@@ -60,7 +60,7 @@ public class ClassroomController {
     @PostMapping
     public ResponseEntity<Response<Classroom>> create(@Valid @RequestBody CreateClassroomDto createClassroomDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classroom = service.create(createClassroomDto, authentication.getPrincipal().toString());
+        var classroom = classroomService.create(createClassroomDto, authentication.getPrincipal().toString());
 
         return ResponseEntity.created(null).body(
                 new Response<>(
@@ -75,7 +75,7 @@ public class ClassroomController {
     @GetMapping("{classroomId}")
     public ResponseEntity<Response<Classroom>> findByClassroomId(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classroom = service.find(classroomId, authentication.getPrincipal().toString());
+        var classroom = classroomService.find(classroomId, authentication.getPrincipal().toString());
 
         return ResponseEntity.ok(
                 new Response<>(
@@ -90,7 +90,7 @@ public class ClassroomController {
     @PutMapping("{classroomId}")
     public ResponseEntity<Response<?>> update(@Valid @RequestBody UpdateClassroomDto updateClassroomDto, @PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classroom = service.update(updateClassroomDto, classroomId, authentication.getPrincipal().toString());
+        var classroom = classroomService.update(updateClassroomDto, classroomId, authentication.getPrincipal().toString());
 
         return ResponseEntity.ok(
                 new Response<>(
@@ -105,7 +105,7 @@ public class ClassroomController {
     @DeleteMapping("{classroomId}")
     public ResponseEntity<Response<?>> deleteById(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.deleteById(classroomId, authentication.getPrincipal().toString());
+        var success = classroomService.deleteById(classroomId, authentication.getPrincipal().toString());
 
         return ResponseEntity.ok(
                 new Response<>(
@@ -120,7 +120,7 @@ public class ClassroomController {
     @PostMapping("/{classroomId}/remove/member/{memberId}")
     public ResponseEntity<Response<?>> removeMember(@PathVariable String memberId, @PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.removeMember(classroomId, memberId, authentication.getPrincipal().toString());
+        var success = classroomService.removeMember(classroomId, memberId, authentication.getPrincipal().toString());
 
         return ResponseEntity.created(null).body(
                 new Response<>(
@@ -135,7 +135,7 @@ public class ClassroomController {
     @PostMapping("/invite")
     public ResponseEntity<Response<?>> invite(@Valid @RequestBody InviteDto inviteDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.invite(inviteDto, authentication.getPrincipal().toString());
+        var success = classroomService.invite(inviteDto, authentication.getPrincipal().toString());
 
         return ResponseEntity.created(null).body(
                 new Response<>(
@@ -151,7 +151,7 @@ public class ClassroomController {
     public ResponseEntity<Response<?>> removeInvite(@Valid @RequestBody RemoveInviteDto removeInviteDto,
                                                     @PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.removeInvite(removeInviteDto, classroomId, authentication.getPrincipal().toString());
+        var success = classroomService.removeInvite(removeInviteDto, classroomId, authentication.getPrincipal().toString());
 
         return ResponseEntity.ok(
                 new Response<>(
@@ -166,7 +166,7 @@ public class ClassroomController {
     @PostMapping("/join/{inviteCode}")
     public ResponseEntity<Response<Classroom>> join(@PathVariable String inviteCode) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.join(inviteCode, authentication.getPrincipal().toString());
+        var success = classroomService.join(inviteCode, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -180,7 +180,7 @@ public class ClassroomController {
     @PostMapping("/accept/{inviteCode}")
     public ResponseEntity<Response<Classroom>> accept(@PathVariable String inviteCode) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.accept(inviteCode, authentication.getPrincipal().toString());
+        var success = classroomService.accept(inviteCode, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -194,7 +194,7 @@ public class ClassroomController {
     @PostMapping("/refuse/{inviteCode}")
     public ResponseEntity<Response<Classroom>> refuse(@PathVariable String inviteCode) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.refuse(inviteCode, authentication.getPrincipal().toString());
+        var success = classroomService.refuse(inviteCode, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -208,7 +208,7 @@ public class ClassroomController {
     @PostMapping("/leave/{classroomId}")
     public ResponseEntity<Response<Classroom>> leave(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.leave(classroomId, authentication.getPrincipal().toString());
+        var success = classroomService.leave(classroomId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -222,7 +222,7 @@ public class ClassroomController {
     @PostMapping("/{classroomId}/class_code/reset")
     public ResponseEntity<Response<Classroom>> resetClassCode(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classroom = service.resetClassCode(classroomId, authentication.getPrincipal().toString());
+        var classroom = classroomService.resetClassCode(classroomId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

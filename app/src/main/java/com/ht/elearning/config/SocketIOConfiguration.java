@@ -5,7 +5,6 @@ import com.corundumstudio.socketio.AuthorizationListener;
 import com.corundumstudio.socketio.AuthorizationResult;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.ht.elearning.jwt.JwtService;
-import io.netty.handler.codec.http.HttpHeaders;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

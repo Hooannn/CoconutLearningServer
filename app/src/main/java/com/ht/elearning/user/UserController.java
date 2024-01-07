@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("hasRole('ADMIN')")
 @CrossOrigin
 public class UserController {
-    private final UserService service;
+    private final UserService userService;
 
     @GetMapping("/authenticated")
     @PreAuthorize("permitAll()")
     public ResponseEntity<Response<User>> getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var user = service.findById(authentication.getPrincipal().toString());
+        var user = userService.findById(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -40,7 +40,7 @@ public class UserController {
     @GetMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:read')")
     public ResponseEntity<Response<User>> findByUserId(@PathVariable String userId) {
-        var user = service.findById(userId);
+        var user = userService.findById(userId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -54,7 +54,7 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasAuthority('admin:create')")
     public ResponseEntity<Response<User>> create(@Valid @RequestBody CreateUserDto createUserDto) {
-        var user = service.create(createUserDto);
+        var user = userService.create(createUserDto);
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
@@ -65,10 +65,24 @@ public class UserController {
         );
     }
 
+    @PostMapping("/es/sync")
+    @PreAuthorize("hasAuthority('admin:create')")
+    public ResponseEntity<Response<?>> syncToElasticsearch() {
+        userService.syncToElasticsearch();
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Started syncing",
+                        true,
+                        null
+                )
+        );
+    }
+
     @PatchMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:update')")
     public ResponseEntity<Response<User>> update(@PathVariable String userId, @Valid @RequestBody UpdateUserDto updateUserDto) {
-        User user = service.update(userId, updateUserDto);
+        User user = userService.update(userId, updateUserDto);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.CREATED.value(),
@@ -83,7 +97,7 @@ public class UserController {
     @DeleteMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:delete')")
     public ResponseEntity<Response<String>> delete(@PathVariable String userId) {
-        var success = service.deleteById(userId);
+        var success = userService.deleteById(userId);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

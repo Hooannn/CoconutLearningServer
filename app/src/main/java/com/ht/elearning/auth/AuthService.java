@@ -11,6 +11,7 @@ import com.ht.elearning.redis.RedisService;
 import com.ht.elearning.user.Role;
 import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserRepository;
+import com.ht.elearning.user.UserService;
 import com.ht.elearning.utils.Helper;
 import com.ht.elearning.utils.MD5;
 import jakarta.mail.MessagingException;
@@ -34,6 +35,7 @@ public class AuthService {
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     private final AppProcessor appProcessor;
     private final UserRepository userRepository;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -57,7 +59,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(registerDto.getPassword()))
                 .role(Role.USER)
                 .build();
-        var savedUser = userRepository.save(user);
+        var savedUser = userService.save(user);
         try {
             appProcessor.processAccountVerification(savedUser);
         } catch (MessagingException e) {
@@ -100,7 +102,7 @@ public class AuthService {
         if (signature.equals(validSignature)) {
             redisService.deleteValue("account_signature:" + email);
             user.setVerified(true);
-            var savedUser = userRepository.save(user);
+            var savedUser = userService.save(user);
             try {
                 appProcessor.processWelcomeUser(user);
             } catch (MessagingException e) {
@@ -135,7 +137,7 @@ public class AuthService {
         if (signature.equals(validSignature)) {
             var user = userRepository.findByEmail(resetPasswordDto.getEmail()).orElseThrow();
             user.setPassword(passwordEncoder.encode(resetPasswordDto.getNewPassword()));
-            userRepository.save(user);
+            userService.save(user);
             redisService.deleteValue("refresh_token:" + user.getId());
             redisService.deleteValue("reset_password_signature:" + user.getEmail());
             return true;
@@ -223,7 +225,7 @@ public class AuthService {
                     .build();
         }
 
-        userRepository.save(user);
+        userService.save(user);
         return AuthenticationResponse
                 .builder()
                 .credentials(getCredentials(user))

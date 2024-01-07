@@ -2,6 +2,7 @@ package com.ht.elearning.user;
 
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.processor.AppProcessor;
+import com.ht.elearning.processor.ElasticsearchSyncProcessor;
 import com.ht.elearning.user.dtos.CreateUserDto;
 import com.ht.elearning.user.dtos.UpdateUserDto;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -17,22 +19,29 @@ import java.util.Optional;
 public class UserService {
     private final AppProcessor appProcessor;
     private final PasswordEncoder passwordEncoder;
-    private final UserRepository repository;
+    private final UserRepository userRepository;
+    private final ElasticsearchSyncProcessor elasticsearchSyncProcessor;
+
+    public User save(User user) {
+        var savedUser = userRepository.save(user);
+        elasticsearchSyncProcessor.userDidSave(savedUser);
+        return savedUser;
+    }
 
     public User findById(String userId) {
-        return repository.findById(userId).orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
+        return userRepository.findById(userId).orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
     }
 
     public boolean deleteById(String userId) {
-        var exists = repository.existsById(userId);
+        var exists = userRepository.existsById(userId);
         if (!exists) throw new HttpException("User not found", HttpStatus.BAD_REQUEST);
-        repository.deleteById(userId);
+        userRepository.deleteById(userId);
         return true;
     }
 
     public User create(CreateUserDto createUserDto) {
         try {
-            var exists = repository.existsByEmail(createUserDto.getEmail());
+            var exists = userRepository.existsByEmail(createUserDto.getEmail());
             if (exists) throw new HttpException("Email is already registered", HttpStatus.BAD_REQUEST);
             var user = User.builder()
                     .lastName(createUserDto.getLastName())
@@ -44,7 +53,7 @@ public class UserService {
                     .verified(createUserDto.isVerified())
                     .build();
 
-            var savedUser = repository.save(user);
+            var savedUser = save(user);
 
             if (savedUser.isVerified()) {
                 appProcessor.processWelcomeUser(savedUser);
@@ -62,7 +71,7 @@ public class UserService {
 
 
     public User update(String userId, UpdateUserDto updateUserDto) {
-        User user = repository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
 
         Optional.ofNullable(updateUserDto.getAvatarUrl()).ifPresent(user::setAvatarUrl);
@@ -71,8 +80,19 @@ public class UserService {
         Optional.ofNullable(updateUserDto.getFirstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateUserDto.getLastName()).ifPresent(user::setLastName);
 
-        repository.save(user);
+        save(user);
 
         return user;
+    }
+
+
+    public List<User> findAll() {
+        return userRepository.findAll();
+    }
+
+
+    public void syncToElasticsearch() {
+        var users = userRepository.findAll();
+        elasticsearchSyncProcessor.indexUsers(users);
     }
 }

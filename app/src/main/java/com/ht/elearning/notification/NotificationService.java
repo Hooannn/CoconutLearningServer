@@ -17,16 +17,16 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
-    private final NotificationRepository repository;
+    private final NotificationRepository notificationRepository;
 
 
     public List<Notification> findMyNotifications(String userId) {
-        return repository.findAllByRecipientId(userId);
+        return notificationRepository.findAllByRecipientId(userId);
     }
 
 
     public long countUnread(String userId) {
-        return repository.countByRecipientIdAndReadFalse(userId);
+        return notificationRepository.countByRecipientIdAndReadFalse(userId);
     }
 
 
@@ -51,7 +51,7 @@ public class NotificationService {
                 .imageUrl(classroom.getOwner().getAvatarUrl())
                 .build();
 
-        return repository.save(notification);
+        return notificationRepository.save(notification);
     }
 
 
@@ -71,7 +71,7 @@ public class NotificationService {
                 .imageUrl(user.getAvatarUrl())
                 .build();
 
-        return repository.save(notification);
+        return notificationRepository.save(notification);
     }
 
 
@@ -86,7 +86,7 @@ public class NotificationService {
                 .imageUrl(user.getAvatarUrl())
                 .build();
 
-        return repository.save(notification);
+        return notificationRepository.save(notification);
     }
 
 
@@ -105,7 +105,7 @@ public class NotificationService {
                         .build()
         ).toList();
 
-        return repository.saveAll(notifications);
+        return notificationRepository.saveAll(notifications);
     }
 
 
@@ -124,7 +124,7 @@ public class NotificationService {
                         .build()
         ).toList();
 
-        return repository.saveAll(notifications);
+        return notificationRepository.saveAll(notifications);
     }
 
 
@@ -143,27 +143,27 @@ public class NotificationService {
                         .build()
         ).toList();
 
-        return repository.saveAll(notifications);
+        return notificationRepository.saveAll(notifications);
     }
 
 
     public boolean deleteMyNotifications(String userId) {
-        repository.deleteAllByRecipientId(userId);
+        notificationRepository.deleteAllByRecipientId(userId);
         return true;
     }
 
 
     public boolean markAll(String userId) {
-        repository.markNotificationsAsRead(userId);
+        notificationRepository.markNotificationsAsRead(userId);
         return true;
     }
 
 
     public boolean mark(String notificationId, String userId) {
-        var notification = repository.findByIdAndRecipientId(notificationId, userId)
+        var notification = notificationRepository.findByIdAndRecipientId(notificationId, userId)
                 .orElseThrow(() -> new HttpException("Notification not found", HttpStatus.BAD_REQUEST));
         notification.setRead(true);
-        repository.save(notification);
+        notificationRepository.save(notification);
         return true;
     }
 }

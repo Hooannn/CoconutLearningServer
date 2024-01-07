@@ -16,13 +16,13 @@ import java.util.List;
 @RequestMapping(path = "/api/v1/notifications")
 @CrossOrigin
 public class NotificationController {
-    private final NotificationService service;
+    private final NotificationService notificationService;
 
 
     @GetMapping("/own")
     public ResponseEntity<QueryResponse<List<Notification>>> findMyNotifications() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var notifications = service.findMyNotifications(authentication.getPrincipal().toString());
+        var notifications = notificationService.findMyNotifications(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new QueryResponse<>(
                         0,
@@ -39,7 +39,7 @@ public class NotificationController {
     @DeleteMapping("/own")
     public ResponseEntity<Response<?>> deleteMyNotifications() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.deleteMyNotifications(authentication.getPrincipal().toString());
+        var success = notificationService.deleteMyNotifications(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -54,7 +54,7 @@ public class NotificationController {
     @GetMapping("/unread/count")
     public ResponseEntity<Response<Long>> countUnread() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var count = service.countUnread(authentication.getPrincipal().toString());
+        var count = notificationService.countUnread(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -69,7 +69,7 @@ public class NotificationController {
     @PostMapping("/mark-all")
     public ResponseEntity<Response<?>> markAll() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.markAll(authentication.getPrincipal().toString());
+        var success = notificationService.markAll(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -84,7 +84,7 @@ public class NotificationController {
     @PostMapping("/mark/{notificationId}")
     public ResponseEntity<Response<?>> mark(@PathVariable String notificationId) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = service.mark(notificationId, authentication.getPrincipal().toString());
+        var success = notificationService.mark(notificationId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
