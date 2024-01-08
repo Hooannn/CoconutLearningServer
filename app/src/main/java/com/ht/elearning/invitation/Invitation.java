@@ -1,5 +1,6 @@
 package com.ht.elearning.invitation;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.config.BaseEntity;
 import jakarta.persistence.*;
@@ -9,7 +10,8 @@ import java.io.Serializable;
 
 @EqualsAndHashCode(callSuper = true)
 @Builder
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -23,6 +25,7 @@ public class Invitation extends BaseEntity {
     private String email;
 
     @Id
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(
             name = "classroom_id", nullable = false
@@ -33,7 +36,8 @@ public class Invitation extends BaseEntity {
     private InvitationType type;
 }
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 class InvitationId implements Serializable {

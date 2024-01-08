@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.util.List;
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 public class MailService {
@@ -85,6 +88,28 @@ public class MailService {
         helper.setText(htmlContent, true);
 
         javaMailSender.send(mimeMessage);
+    }
+
+
+    public void sendClassroomInvitationMails(List<String> toList, String subject, String acceptUrl) {
+        List<MimeMessage> mimeMessages = toList.stream().map(email -> {
+            try {
+                MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+                MimeMessageHelper helper = null;
+                helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+                Context context = new Context();
+                context.setVariable("acceptUrl", acceptUrl);
+                String htmlContent = templateEngine.process("classroom-invitation", context);
+                helper.setTo(email);
+                helper.setSubject(subject);
+                helper.setText(htmlContent, true);
+                return mimeMessage;
+            } catch (Exception e) {
+                return null;
+            }
+        }).filter(Objects::nonNull).toList();
+
+        javaMailSender.send(mimeMessages.toArray(new MimeMessage[0]));
     }
 
 

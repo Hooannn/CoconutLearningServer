@@ -6,24 +6,26 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.IOException;
 import java.util.List;
 
+enum ActionType {
+    PRIMARY, DANGER, DEFAULT
+}
+
 @Builder
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Action {
     private String title;
     private String description;
-
     @JsonProperty("callback_url")
     private String callbackUrl;
+    private ActionType type;
 }
 
 @Converter
@@ -43,7 +45,8 @@ class ActionListConverter implements AttributeConverter<List<Action>, String> {
     @Override
     public List<Action> convertToEntityAttribute(String dbData) {
         try {
-            return objectMapper.readValue(dbData, new TypeReference<List<Action>>() {});
+            return objectMapper.readValue(dbData, new TypeReference<List<Action>>() {
+            });
         } catch (IOException e) {
             throw new RuntimeException("Error converting JSON to Action list", e);
         }

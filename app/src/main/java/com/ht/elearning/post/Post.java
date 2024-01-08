@@ -14,7 +14,8 @@ import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 @Builder
-@Data
+@Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -29,7 +30,7 @@ public class Post extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
     @JsonIgnore
@@ -41,7 +42,7 @@ public class Post extends BaseEntity {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
-    @OneToMany(mappedBy = "post", targetEntity = Comment.class)
+    @OneToMany(mappedBy = "post", targetEntity = Comment.class, cascade = CascadeType.REMOVE)
     private List<Comment> comments;
 
     @ManyToMany

@@ -16,6 +16,7 @@ import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -38,10 +39,12 @@ public class NotificationProcessor {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
+    @Value("${client.web.url}")
+    private String clientWebUrl;
 
     @Async
     public void processClassroomInvitation(Invitation invitation, Classroom classroom) {
-        var urlString = "https://example.com/classroom/invitation?invite_code=" + classroom.getInviteCode();
+        var urlString = clientWebUrl + "/classroom/invitation?invite_code=" + classroom.getInviteCode();
         URL acceptUrl = null;
         var user = userRepository.findByEmail(invitation.getEmail()).orElse(null);
         try {
@@ -59,7 +62,7 @@ public class NotificationProcessor {
                             .ifPresent(client -> {
                                 HashMap<String, String> eventData = new HashMap<>();
                                 eventData.put("notification_id", notification.getId());
-                                client.sendEvent("notification:create", eventData);
+                                client.sendEvent("notification:created", eventData);
                             });
 
                     try {
@@ -70,7 +73,7 @@ public class NotificationProcessor {
                                         .setTitle(notification.getTitle())
                                         .setImage(notification.getImageUrl())
                                         .build(),
-                                null
+                                new HashMap<>()
                         );
                         logger.debug(
                                 "Handle[processClassroomInvitation] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
@@ -112,6 +115,69 @@ public class NotificationProcessor {
     }
 
     @Async
+    public void processClassroomInvitations(List<Invitation> invitations, Classroom classroom) {
+        var urlString = clientWebUrl + "/classroom/invitation?invite_code=" + classroom.getInviteCode();
+        URL acceptUrl = null;
+        var users = userRepository.findAllByEmailIn(invitations.stream().map(Invitation::getEmail).toList());
+        var emailsToSend = invitations.stream().map(Invitation::getEmail).toList();
+        try {
+            acceptUrl = new URI(urlString).toURL();
+
+            CompletableFuture<Void> createNotificationFuture = CompletableFuture.runAsync(() -> {
+                if (!users.isEmpty()) {
+                    var notifications = notificationService.createClassroomInvitations(users, classroom, invitations.get(0));
+                    var notification = notifications.get(0);
+                    var target = users.stream().map(User::getId).toList();
+                    socketIOServer.getNamespace("/notification")
+                            .getAllClients()
+                            .stream()
+                            .filter(client -> target.contains(client.getHandshakeData().getHttpHeaders().get("x-auth-id")))
+                            .findFirst()
+                            .ifPresent(client -> {
+                                HashMap<String, String> eventData = new HashMap<>();
+                                client.sendEvent("notification:created", eventData);
+                            });
+
+                    try {
+                        var batchResponse = pushNotificationService.push(
+                                target,
+                                Notification.builder()
+                                        .setBody(notification.getContent())
+                                        .setTitle(notification.getTitle())
+                                        .setImage(notification.getImageUrl())
+                                        .build(),
+                                new HashMap<>()
+                        );
+                        logger.debug(
+                                "Handle[processClassroomInvitation] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                                batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+                        );
+                    } catch (Exception e) {
+                        logger.warn(
+                                "Handle[processClassroomInvitation] - Catch exception while pushing notification - UserIds[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                                target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                        );
+                    }
+                }
+            });
+            URL finalAcceptUrl = acceptUrl;
+            CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
+                String mailSubject = "ELearning - Classroom invitation";
+                mailService.sendClassroomInvitationMails(emailsToSend, mailSubject, finalAcceptUrl.toString());
+            });
+
+            CompletableFuture.allOf(createNotificationFuture, sendMailFuture).join();
+        } catch (MalformedURLException | URISyntaxException e) {
+            logger.error(
+                    "Error while doing processClassroomInvitations - Emails[{}] - ClassroomId[{}] - Message[{}]",
+                    emailsToSend,
+                    classroom.getId(),
+                    e.getMessage()
+            );
+        }
+    }
+
+    @Async
     public void processClassroomJoining(Classroom classroom, User user) {
         var notification = notificationService.createJoiningClassroomNotification(user, classroom);
         var target = classroom.getOwner().getId();
@@ -123,7 +189,7 @@ public class NotificationProcessor {
                 .ifPresent(client -> {
                     HashMap<String, String> eventData = new HashMap<>();
                     eventData.put("notification_id", notification.getId());
-                    client.sendEvent("notification:create", eventData);
+                    client.sendEvent("notification:created", eventData);
                 });
 
         try {
@@ -134,7 +200,7 @@ public class NotificationProcessor {
                             .setTitle(notification.getTitle())
                             .setImage(notification.getImageUrl())
                             .build(),
-                    null
+                    new HashMap<>()
             );
             logger.debug(
                     "Handle[processClassroomJoining] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
@@ -160,7 +226,7 @@ public class NotificationProcessor {
                 .ifPresent(client -> {
                     HashMap<String, String> eventData = new HashMap<>();
                     eventData.put("notification_id", notification.getId());
-                    client.sendEvent("notification:create", eventData);
+                    client.sendEvent("notification:created", eventData);
                 });
 
         try {
@@ -171,7 +237,7 @@ public class NotificationProcessor {
                             .setTitle(notification.getTitle())
                             .setImage(notification.getImageUrl())
                             .build(),
-                    null
+                    new HashMap<>()
             );
             logger.debug(
                     "Handle[processClassroomLeaving] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
@@ -204,7 +270,7 @@ public class NotificationProcessor {
                     return memberIds.contains(authId);
                 })
                 .forEach(client -> {
-                    client.sendEvent("notification:create");
+                    client.sendEvent("notification:created");
                 });
 
         var notification = notifications.get(0);
@@ -217,7 +283,7 @@ public class NotificationProcessor {
                             .setTitle(notification.getTitle())
                             .setImage(notification.getImageUrl())
                             .build(),
-                    null
+                    new HashMap<>()
             );
             logger.debug(
                     "Handle[processNewPost] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
@@ -251,7 +317,7 @@ public class NotificationProcessor {
                     return memberIds.contains(authId);
                 })
                 .forEach(client -> {
-                    client.sendEvent("notification:create");
+                    client.sendEvent("notification:created");
                 });
 
         var notification = notifications.get(0);
@@ -264,7 +330,7 @@ public class NotificationProcessor {
                             .setTitle(notification.getTitle())
                             .setImage(notification.getImageUrl())
                             .build(),
-                    null
+                    new HashMap<>()
             );
             logger.debug(
                     "Handle[processNewComment] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
@@ -282,13 +348,11 @@ public class NotificationProcessor {
     @Async
     public void processNewClasswork(Classwork savedClasswork) {
         var classroom = savedClasswork.getClassroom();
-        var assignees = savedClasswork.getAssignees();
         var author = savedClasswork.getAuthor();
 
         //Create notification for assignees and other providers
         CompletableFuture<Void> createNotificationsFuture = CompletableFuture.runAsync(() -> {
-            var providers = classroom.getProviders().stream().filter(provider -> !provider.getId().equals(author.getId())).toList();
-            List<User> recipients = Stream.concat(providers.stream(), assignees.stream()).toList();
+            List<User> recipients = classroom.getMembers().stream().filter(m -> !m.getId().equals(author.getId())).toList();
             var notifications = notificationService.createNewClassworkNotifications(recipients, savedClasswork);
             var notification = notifications.get(0);
             var recipientIds = recipients.stream().map(User::getId).toList();
@@ -300,7 +364,7 @@ public class NotificationProcessor {
                         return recipientIds.contains(authId);
                     })
                     .forEach(client -> {
-                        client.sendEvent("notification:create");
+                        client.sendEvent("notification:created");
                     });
 
             try {
@@ -311,7 +375,7 @@ public class NotificationProcessor {
                                 .setTitle(notification.getTitle())
                                 .setImage(notification.getImageUrl())
                                 .build(),
-                        null
+                        new HashMap<>()
                 );
                 logger.debug(
                         "Handle[processNewClasswork] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
@@ -327,6 +391,7 @@ public class NotificationProcessor {
 
         //Just send mail for assignees
         CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
+            var assignees = savedClasswork.getAssignees();
             String mailSubject = "Elearning - Classroom: " + savedClasswork.getClassroom().getName();
             assignees.forEach(assignee -> {
                 try {

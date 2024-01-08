@@ -1,10 +1,7 @@
 package com.ht.elearning.classroom;
 
 
-import com.ht.elearning.classroom.dtos.CreateClassroomDto;
-import com.ht.elearning.classroom.dtos.InviteDto;
-import com.ht.elearning.classroom.dtos.RemoveInviteDto;
-import com.ht.elearning.classroom.dtos.UpdateClassroomDto;
+import com.ht.elearning.classroom.dtos.*;
 import com.ht.elearning.config.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -147,6 +144,21 @@ public class ClassroomController {
         );
     }
 
+    @PostMapping("/invite/many")
+    public ResponseEntity<Response<?>> inviteMany(@Valid @RequestBody InviteManyDto inviteManyDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = classroomService.inviteMany(inviteManyDto, authentication.getPrincipal().toString());
+
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        "Invited",
+                        success,
+                        null
+                )
+        );
+    }
+
     @PostMapping("/invite/remove/{classroomId}")
     public ResponseEntity<Response<?>> removeInvite(@Valid @RequestBody RemoveInviteDto removeInviteDto,
                                                     @PathVariable String classroomId) {
@@ -177,10 +189,10 @@ public class ClassroomController {
         );
     }
 
-    @PostMapping("/accept/{inviteCode}")
-    public ResponseEntity<Response<Classroom>> accept(@PathVariable String inviteCode) {
+    @PostMapping("/webhook/accept/{inviteCode}")
+    public ResponseEntity<Response<Classroom>> accept(@PathVariable String inviteCode, @RequestParam String notificationId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = classroomService.accept(inviteCode, authentication.getPrincipal().toString());
+        var success = classroomService.accept(inviteCode, notificationId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -191,14 +203,14 @@ public class ClassroomController {
         );
     }
 
-    @PostMapping("/refuse/{inviteCode}")
-    public ResponseEntity<Response<Classroom>> refuse(@PathVariable String inviteCode) {
+    @PostMapping("/webhook/refuse/{inviteCode}")
+    public ResponseEntity<Response<Classroom>> refuse(@PathVariable String inviteCode, @RequestParam String notificationId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = classroomService.refuse(inviteCode, authentication.getPrincipal().toString());
+        var success = classroomService.refuse(inviteCode, notificationId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Successfully refused to join classroom",
+                        "Refused to join classroom",
                         success,
                         null
                 )

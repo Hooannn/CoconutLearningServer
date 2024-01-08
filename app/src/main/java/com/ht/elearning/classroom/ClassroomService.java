@@ -1,16 +1,13 @@
 package com.ht.elearning.classroom;
 
-import com.ht.elearning.classroom.dtos.CreateClassroomDto;
-import com.ht.elearning.classroom.dtos.InviteDto;
-import com.ht.elearning.classroom.dtos.RemoveInviteDto;
-import com.ht.elearning.classroom.dtos.UpdateClassroomDto;
+import com.ht.elearning.classroom.dtos.*;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.invitation.InvitationRepository;
 import com.ht.elearning.invitation.InvitationType;
+import com.ht.elearning.notification.NotificationService;
 import com.ht.elearning.processor.NotificationProcessor;
-import com.ht.elearning.user.Role;
-import com.ht.elearning.user.UserRepository;
+import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserService;
 import com.ht.elearning.utils.Helper;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -31,6 +30,7 @@ public class ClassroomService {
     private final UserService userService;
     private final InvitationRepository invitationRepository;
     private final NotificationProcessor notificationProcessor;
+    private final NotificationService notificationService;
 
     public Classroom create(CreateClassroomDto createClassroomDto, String ownerId) {
         Random random = new Random();
@@ -58,13 +58,8 @@ public class ClassroomService {
         var classroom = classroomRepository.findById(classroomId).orElseThrow(
                 () -> new HttpException("Classroom not found", HttpStatus.BAD_REQUEST)
         );
-        if (
-                classroom.getUsers().stream().noneMatch(u -> u.getId().equals(userId))
-                        &&
-                        !classroom.getOwner().getId().equals(userId)
-                        &&
-                        classroom.getProviders().stream().noneMatch(u -> u.getId().equals(userId))
-        )
+
+        if (!isMember(classroom, userId))
             throw new HttpException("Forbidden request", HttpStatus.FORBIDDEN);
 
         return classroom;
@@ -79,14 +74,10 @@ public class ClassroomService {
                 () -> new HttpException("Classroom not found", HttpStatus.BAD_REQUEST)
         );
 
-        if (classroom.getOwner().getEmail().equals(inviteDto.getEmail()))
-            throw new HttpException("Illegal request", HttpStatus.NOT_ACCEPTABLE);
-
-        if (classroom.getUsers().stream().anyMatch(u -> u.getEmail().equals(inviteDto.getEmail()))
-                || classroom.getProviders().stream().anyMatch(u -> u.getEmail().equals(inviteDto.getEmail())))
+        if (classroom.getMembers().stream().anyMatch(u -> u.getEmail().equals(inviteDto.getEmail())))
             throw new HttpException("User already joined", HttpStatus.BAD_REQUEST);
 
-        if (invitationRepository.existsByEmailAndClassroomId(inviteDto.getEmail(), inviteDto.getClassId()))
+        if (classroom.getInvitations().stream().anyMatch(i -> i.getEmail().equals(inviteDto.getEmail())))
             throw new HttpException("Invitation already exists", HttpStatus.BAD_REQUEST);
 
         var invitation = Invitation.builder()
@@ -102,45 +93,65 @@ public class ClassroomService {
         return true;
     }
 
+    public boolean inviteMany(InviteManyDto inviteManyDto, String ownerId) {
+        var classroom = classroomRepository.findByIdAndOwnerId(inviteManyDto.getClassId(), ownerId).orElseThrow(
+                () -> new HttpException("Classroom not found", HttpStatus.BAD_REQUEST)
+        );
+        //Illegal email list includes member emails and existed invitation emails
+        Set<String> illegalEmails = classroom.getMembers().stream().map(User::getEmail).collect(Collectors.toSet());
+        illegalEmails.add(classroom.getOwner().getEmail());
+        illegalEmails.addAll(classroom.getInvitations().stream().map(Invitation::getEmail).collect(Collectors.toSet()));
+
+        if (inviteManyDto.getEmails().stream().anyMatch(illegalEmails::contains))
+            throw new HttpException("Invalid email detected. Please check and try again", HttpStatus.BAD_REQUEST);
+
+        var invitationType = inviteManyDto.getType();
+        var invitations = inviteManyDto.getEmails().stream().map(email -> Invitation.builder()
+                .type(invitationType)
+                .classroom(classroom)
+                .email(email)
+                .build()).toList();
+
+        var savedInvitations = invitationRepository.saveAll(invitations);
+
+        notificationProcessor.processClassroomInvitations(savedInvitations, classroom);
+
+        return true;
+    }
 
     public boolean join(String inviteCode, String userId) {
         var classroom = classroomRepository.findByInviteCode(inviteCode)
                 .orElseThrow(() -> new HttpException("Classroom not found", HttpStatus.BAD_REQUEST));
 
-        if (classroom.getOwner().getId().equals(userId))
-            throw new HttpException("Illegal request", HttpStatus.NOT_ACCEPTABLE);
-
-        if (classroom.getUsers().stream().anyMatch(u -> u.getId().equals(userId))
-                || classroom.getProviders().stream().anyMatch(u -> u.getId().equals(userId)))
+        if (isMember(classroom, userId))
             throw new HttpException("Already joined", HttpStatus.BAD_REQUEST);
 
         var user = userService.findById(userId);
 
         classroom.getUsers().add(user);
 
-        invitationRepository.deleteByEmailAndClassroomId(user.getEmail(), classroom.getId());
+        classroom.getInvitations().stream().filter(i -> i.getEmail().equals(user.getEmail())).findFirst().ifPresent(
+                invitationRepository::delete
+        );
         var saved = classroomRepository.save(classroom);
         notificationProcessor.processClassroomJoining(saved, user);
 
         return true;
-
     }
 
 
-    public boolean accept(String inviteCode, String userId) {
+    public boolean accept(String inviteCode, String notificationId, String userId) {
         var classroom = classroomRepository.findByInviteCode(inviteCode)
                 .orElseThrow(() -> new HttpException("Classroom not found", HttpStatus.BAD_REQUEST));
 
         var user = userService.findById(userId);
 
-        var invitation = invitationRepository.findByEmailAndClassroomId(user.getEmail(), classroom.getId()).orElseThrow(
-                () -> new HttpException("Invitation not found", HttpStatus.BAD_REQUEST));
+        var invitation = classroom.getInvitations().stream()
+                .filter(i -> i.getEmail().equals(user.getEmail()))
+                .findFirst()
+                .orElseThrow(() -> new HttpException("Invitation not found", HttpStatus.BAD_REQUEST));
 
-        if (classroom.getOwner().getId().equals(userId))
-            throw new HttpException("Illegal request", HttpStatus.NOT_ACCEPTABLE);
-
-        if (classroom.getUsers().stream().anyMatch(u -> u.getId().equals(userId))
-                || classroom.getProviders().stream().anyMatch(u -> u.getId().equals(userId)))
+        if (isMember(classroom, userId))
             throw new HttpException("Already joined", HttpStatus.BAD_REQUEST);
 
         if (invitation.getType() == InvitationType.PROVIDER) {
@@ -149,26 +160,26 @@ public class ClassroomService {
             classroom.getUsers().add(user);
         }
 
-        invitationRepository.deleteByEmailAndClassroomId(user.getEmail(), classroom.getId());
+        invitationRepository.delete(invitation);
         var saved = classroomRepository.save(classroom);
         notificationProcessor.processClassroomJoining(saved, user);
-
+        notificationService.markAsDone(notificationId);
         return true;
     }
 
 
-    public boolean refuse(String inviteCode, String userId) {
+    public boolean refuse(String inviteCode, String notificationId, String userId) {
         var classroom = classroomRepository.findByInviteCode(inviteCode)
                 .orElseThrow(() -> new HttpException("Classroom not found", HttpStatus.BAD_REQUEST));
 
         var user = userService.findById(userId);
 
-        var exists = invitationRepository.existsByEmailAndClassroomId(user.getEmail(), classroom.getId());
+        var invitation = classroom.getInvitations().stream().filter(i -> i.getEmail().equals(user.getEmail())).findFirst().orElseThrow(
+                () -> new HttpException("Invitation not found", HttpStatus.BAD_REQUEST)
+        );
 
-        if (!exists) throw new HttpException("Bad request", HttpStatus.BAD_REQUEST);
-
-        invitationRepository.deleteByEmailAndClassroomId(user.getEmail(), classroom.getId());
-
+        invitationRepository.delete(invitation);
+        notificationService.markAsDone(notificationId);
         return true;
     }
 
@@ -177,11 +188,7 @@ public class ClassroomService {
         var classroom = classroomRepository.findById(classroomId)
                 .orElseThrow(() -> new HttpException("Classroom not found", HttpStatus.BAD_REQUEST));
 
-        if (classroom.getOwner().getId().equals(userId))
-            throw new HttpException("Illegal request", HttpStatus.NOT_ACCEPTABLE);
-
-        if (classroom.getUsers().stream().noneMatch(u -> u.getId().equals(userId))
-                && classroom.getProviders().stream().noneMatch(u -> u.getId().equals(userId)))
+        if (!isMember(classroom, userId))
             throw new HttpException("You are not a member of this classroom", HttpStatus.BAD_REQUEST);
 
         var user = userService.findById(userId);
@@ -217,16 +224,12 @@ public class ClassroomService {
         var classroom = classroomRepository.findById(classId).orElse(null);
         if (classroom == null) return false;
 
-        return classroom.getUsers().stream().anyMatch(u -> u.getId().equals(userId))
-                || classroom.getOwner().getId().equals(userId)
-                || classroom.getProviders().stream().anyMatch(u -> u.getId().equals(userId));
+        return classroom.getMembers().stream().anyMatch(u -> u.getId().equals(userId));
     }
 
 
     public boolean isMember(Classroom classroom, String userId) {
-        return classroom.getUsers().stream().anyMatch(u -> u.getId().equals(userId))
-                || classroom.getOwner().getId().equals(userId)
-                || classroom.getProviders().stream().anyMatch(u -> u.getId().equals(userId));
+        return classroom.getMembers().stream().anyMatch(u -> u.getId().equals(userId));
     }
 
 

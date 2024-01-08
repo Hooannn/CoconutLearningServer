@@ -70,6 +70,7 @@ public class PushNotificationService {
         List<FcmToken> fcmTokens = fcmTokenRepository.findAllById(userIds);
         if (fcmTokens.isEmpty()) throw new Exception("Token not found");
         List<Message> messages = buildMessages(fcmTokens, notification, messageData);
+        if (messages.isEmpty()) throw new Exception("Messages is empty");
         return firebaseMessaging.sendAll(messages);
     }
 
@@ -78,6 +79,7 @@ public class PushNotificationService {
         List<FcmToken> fcmTokens = fcmTokenRepository.findAllById(userIds);
         if (fcmTokens.isEmpty()) throw new Exception("Token not found");
         List<Message> messages = buildMessages(fcmTokens, notification, messageData);
+        if (messages.isEmpty()) throw new Exception("Messages is empty");
         return firebaseMessaging.sendAll(messages, dryRun);
     }
 
@@ -85,6 +87,7 @@ public class PushNotificationService {
     public BatchResponse push(String userId, Notification notification, Map<String, String> messageData) throws Exception {
         FcmToken fcmToken = fcmTokenRepository.findById(userId).orElseThrow(() -> new Exception("Token not found"));
         List<Message> messages = buildMessages(fcmToken, notification, messageData);
+        if (messages.isEmpty()) throw new Exception("Messages is empty");
         return firebaseMessaging.sendAll(messages);
     }
 
@@ -92,6 +95,7 @@ public class PushNotificationService {
     public BatchResponse push(String userId, Notification notification, Map<String, String> messageData, boolean dryRun) throws Exception {
         FcmToken fcmToken = fcmTokenRepository.findById(userId).orElseThrow(() -> new Exception("Token not found"));
         List<Message> messages = buildMessages(fcmToken, notification, messageData);
+        if (messages.isEmpty()) throw new Exception("Messages is empty");
         return firebaseMessaging.sendAll(messages, dryRun);
     }
 
@@ -100,13 +104,11 @@ public class PushNotificationService {
         List<String> messageTokens = extractTokens(fcmToken);
         return messageTokens
                 .stream()
-                .map(token -> {
-                    return Message.builder()
-                            .setNotification(notification)
-                            .putAllData(messageData)
-                            .setToken(token)
-                            .build();
-                })
+                .map(token -> Message.builder()
+                        .setNotification(notification)
+                        .putAllData(messageData)
+                        .setToken(token)
+                        .build())
                 .toList();
     }
 
@@ -115,13 +117,11 @@ public class PushNotificationService {
         List<String> messageTokens = extractTokens(fcmTokens);
         return messageTokens
                 .stream()
-                .map(token -> {
-                    return Message.builder()
-                            .setNotification(notification)
-                            .putAllData(messageData)
-                            .setToken(token)
-                            .build();
-                })
+                .map(token -> Message.builder()
+                        .setNotification(notification)
+                        .putAllData(messageData)
+                        .setToken(token)
+                        .build())
                 .toList();
     }
 

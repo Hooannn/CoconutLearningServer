@@ -1,9 +1,6 @@
 package com.ht.elearning.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.FuzzyQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.MultiMatchQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
@@ -79,21 +76,17 @@ public class ElasticsearchService {
 
 
     public SearchResponse<User> lookupUsers(String query) throws IOException {
-        //TODO: in case query is *@gmail.com it return all the documents
-        /* Code from GPT
         if (query.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
             return elasticsearchClient.search(s -> s
                             .index("users")
                             .query(q ->
-                                    q.term(t -> t
-                                            .field("email")
-                                            .value(query)
+                                    q.term(m ->
+                                            m.field("email.keyword").value(query)
                                     )
                             ),
                     User.class
             );
         } else {
-            // Use the original multi-match query for non-email queries
             return elasticsearchClient.search(s -> s
                             .index("users")
                             .query(q ->
@@ -105,18 +98,5 @@ public class ElasticsearchService {
                     User.class
             );
         }
-        */
-        return elasticsearchClient.search(s -> s
-                        .index("users")
-                        .query(q ->
-                                q.multiMatch(m -> m
-                                        .fields("email", "first_name", "last_name")
-                                        .query(query)
-                                )
-                        )
-
-                ,
-                User.class
-        );
     }
 }

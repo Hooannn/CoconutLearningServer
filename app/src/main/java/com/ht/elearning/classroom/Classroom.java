@@ -1,5 +1,8 @@
 package com.ht.elearning.classroom;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.classwork.ClassworkCategory;
 import com.ht.elearning.config.BaseEntity;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.user.User;
@@ -9,10 +12,12 @@ import org.springframework.data.annotation.Reference;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @EqualsAndHashCode(callSuper = true)
 @Builder
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -44,7 +49,7 @@ public class Classroom extends BaseEntity {
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    @ManyToMany
+    @ManyToMany()
     @JoinTable(
             name = "classroom_provider",
             joinColumns = @JoinColumn(name = "classroom_id", nullable = false),
@@ -52,7 +57,7 @@ public class Classroom extends BaseEntity {
     )
     private List<User> providers;
 
-    @ManyToMany
+    @ManyToMany()
     @JoinTable(
             name = "classroom_user",
             joinColumns = @JoinColumn(name = "classroom_id", nullable = false),
@@ -60,6 +65,16 @@ public class Classroom extends BaseEntity {
     )
     private List<User> users;
 
-    @OneToMany(mappedBy = "classroom", targetEntity = Invitation.class)
+    @OneToMany(mappedBy = "classroom", targetEntity = Invitation.class, cascade = CascadeType.REMOVE)
     private List<Invitation> invitations;
+
+    @JsonProperty("classwork_categories")
+    @OneToMany(mappedBy = "classroom", targetEntity = ClassworkCategory.class, cascade = CascadeType.REMOVE)
+    private List<ClassworkCategory> classworkCategories;
+
+    @JsonIgnore
+    public List<User> getMembers() {
+        Stream<User> usersAndProvidersStream = Stream.concat(getProviders().stream(), getUsers().stream());
+        return Stream.concat(usersAndProvidersStream, Stream.of(owner)).toList();
+    }
 }
