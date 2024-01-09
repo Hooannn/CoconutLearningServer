@@ -120,6 +120,11 @@ public class FileService {
 
         return fileRepository.save(fileToSave);
     }
+
+
+    public List<File> findMyFiles(String userId) {
+        return fileRepository.findAllByCreatorId(userId);
+    }
 }
 
 @Data

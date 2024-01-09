@@ -20,6 +20,21 @@ public class FileController {
     private final FileService fileService;
 
 
+    @GetMapping("folder")
+    public ResponseEntity<Response<List<File>>> findMyFiles() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var files = fileService.findMyFiles(authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Ok",
+                        true,
+                        files
+                )
+        );
+    }
+
+
     @PostMapping("upload")
     public ResponseEntity<Response<List<File>>> upload(@RequestPart("files") List<MultipartFile> files) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
