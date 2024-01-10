@@ -4,6 +4,8 @@ import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.classwork.dtos.CreateClassworkCategoryDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkCategoryDto;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.processor.ClassroomUpdateType;
+import com.ht.elearning.processor.NotificationProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.Optional;
 public class ClassworkCategoryService {
     private final ClassworkCategoryRepository classworkCategoryRepository;
     private final ClassroomService classroomService;
+    private final NotificationProcessor notificationProcessor;
 
 
     public ClassworkCategory create(CreateClassworkCategoryDto createClassworkCategoryDto, String classroomId, String userId) {
@@ -28,12 +31,15 @@ public class ClassworkCategoryService {
                 .classroom(classroom)
                 .build();
 
-        return classworkCategoryRepository.save(category);
+        var savedCategory = classworkCategoryRepository.save(category);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
+        return savedCategory;
     }
 
 
     public ClassworkCategory update(UpdateClassworkCategoryDto updateClassworkCategoryDto, String categoryId, String classroomId, String userId) {
-        var isMember = classroomService.isMember(classroomId, userId);
+        var classroom = classroomService.findById(classroomId);
+        var isMember = classroomService.isMember(classroom, userId);
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
 
         var category = classworkCategoryRepository.findById(categoryId)
@@ -41,17 +47,21 @@ public class ClassworkCategoryService {
 
         Optional.ofNullable(updateClassworkCategoryDto.getName()).ifPresent(category::setName);
 
-        return classworkCategoryRepository.save(category);
+        var savedCategory = classworkCategoryRepository.save(category);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
+        return savedCategory;
     }
 
 
     public boolean deleteById(String categoryId, String classroomId, String userId) {
-        var isMember = classroomService.isMember(classroomId, userId);
+        var classroom = classroomService.findById(classroomId);
+        var isMember = classroomService.isMember(classroom, userId);
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
         var category = classworkCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
 
         classworkCategoryRepository.delete(category);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
         return true;
     }
 

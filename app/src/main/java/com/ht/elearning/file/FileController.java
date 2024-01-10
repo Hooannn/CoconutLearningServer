@@ -1,6 +1,8 @@
 package com.ht.elearning.file;
 
 import com.ht.elearning.config.Response;
+import com.ht.elearning.file.dtos.RemoveManyFilesDto;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,6 +71,21 @@ public class FileController {
     public ResponseEntity<Response<List<File>>> remove(@PathVariable String fileId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var success = fileService.remove(fileId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Removed",
+                        success,
+                        null
+                )
+        );
+    }
+
+
+    @PostMapping("/remove/many")
+    public ResponseEntity<Response<?>> removeMany(@Valid @RequestBody RemoveManyFilesDto removeManyFilesDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var success = fileService.removeMany(removeManyFilesDto, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

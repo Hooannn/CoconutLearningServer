@@ -2,6 +2,7 @@ package com.ht.elearning.file;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.file.dtos.RemoveManyFilesDto;
 import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserService;
 import com.ht.elearning.utils.MultipartFileConverter;
@@ -9,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,7 @@ public class FileService {
     public File update(String fileId, MultipartFile multipartFile, String createdBy) {
         var file = fileRepository.findByIdAndCreatorId(fileId, createdBy).orElseThrow(() -> new HttpException("File not found", HttpStatus.BAD_REQUEST));
         String endpoint = "/" + fileId;
+        String contentType = file.getContentType();
         var uploadResponse = fileVolumeApiClient.post()
                 .uri(endpoint)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -73,6 +76,7 @@ public class FileService {
         file.setETag(uploadResponse.getETag());
         file.setSize(uploadResponse.getSize());
         file.setName(uploadResponse.getName());
+        file.setContentType(contentType);
 
         return fileRepository.save(file);
     }
@@ -94,7 +98,7 @@ public class FileService {
 
         var fileId = readDirAssignResponse.getFid();
         String endpoint = "/" + fileId;
-
+        String contentType = file.getContentType();
         var uploadResponse = fileVolumeApiClient.post()
                 .uri(endpoint)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -116,6 +120,7 @@ public class FileService {
                 .eTag(uploadResponse.getETag())
                 .name(uploadResponse.getName())
                 .size(uploadResponse.getSize())
+                .contentType(contentType)
                 .build();
 
         return fileRepository.save(fileToSave);
@@ -124,6 +129,30 @@ public class FileService {
 
     public List<File> findMyFiles(String userId) {
         return fileRepository.findAllByCreatorId(userId);
+    }
+
+
+    public boolean removeMany(RemoveManyFilesDto removeManyFilesDto, String ownerId) {
+        var files = fileRepository.findAllByIdInAndCreatorId(removeManyFilesDto.getFileIds(), ownerId);
+        for (File file : files) {
+            String endpoint = "/" + file.getId();
+            var res = fileVolumeApiClient.delete()
+                    .uri(endpoint)
+                    .retrieve()
+                    .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                            response -> {
+                                throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
+                            })
+                    .bodyToMono(RemoveFileResponse.class)
+                    .block();
+
+            if (res == null)
+                throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
+
+            fileRepository.delete(file);
+        }
+
+        return true;
     }
 }
 

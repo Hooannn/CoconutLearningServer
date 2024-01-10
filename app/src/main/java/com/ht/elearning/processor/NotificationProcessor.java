@@ -3,6 +3,7 @@ package com.ht.elearning.processor;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.google.firebase.messaging.Notification;
 import com.ht.elearning.classroom.Classroom;
+import com.ht.elearning.classroom.ClassroomRepository;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
 import com.ht.elearning.invitation.Invitation;
@@ -37,6 +38,7 @@ public class NotificationProcessor {
     private final MailService mailService;
     private final SocketIOServer socketIOServer;
     private final UserRepository userRepository;
+    private final ClassroomRepository classroomRepository;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
     @Value("${client.web.url}")
@@ -63,6 +65,10 @@ public class NotificationProcessor {
                                 HashMap<String, String> eventData = new HashMap<>();
                                 eventData.put("notification_id", notification.getId());
                                 client.sendEvent("notification:created", eventData);
+                                logger.debug("[Socket] Send notification:created - UserId[{}] - EventData[{}]",
+                                        client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
+                                        eventData
+                                );
                             });
 
                     try {
@@ -136,6 +142,10 @@ public class NotificationProcessor {
                             .ifPresent(client -> {
                                 HashMap<String, String> eventData = new HashMap<>();
                                 client.sendEvent("notification:created", eventData);
+                                logger.debug("[Socket] Send notification:created - UserId[{}] - EventData[{}]",
+                                        client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
+                                        eventData
+                                );
                             });
 
                     try {
@@ -190,6 +200,10 @@ public class NotificationProcessor {
                     HashMap<String, String> eventData = new HashMap<>();
                     eventData.put("notification_id", notification.getId());
                     client.sendEvent("notification:created", eventData);
+                    logger.debug("[Socket] Send notification:created - UserId[{}] - EventData[{}]",
+                            client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
+                            eventData
+                    );
                 });
 
         try {
@@ -227,6 +241,10 @@ public class NotificationProcessor {
                     HashMap<String, String> eventData = new HashMap<>();
                     eventData.put("notification_id", notification.getId());
                     client.sendEvent("notification:created", eventData);
+                    logger.debug("[Socket] Send notification:created - UserId[{}] - EventData[{}]",
+                            client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
+                            eventData
+                    );
                 });
 
         try {
@@ -254,10 +272,7 @@ public class NotificationProcessor {
     @Async
     public void processNewPost(Post savedPost) {
         var classroom = savedPost.getClassroom();
-        var members = new ArrayList<User>();
-        members.add(classroom.getOwner());
-        members.addAll(classroom.getUsers());
-        members.addAll(classroom.getProviders());
+        var members = classroom.getMembers().stream().filter(m -> !m.getId().equals(savedPost.getAuthor().getId())).toList();
         var memberIds = members.stream().map(User::getId).toList();
 
         var notifications = notificationService.createNewPostNotifications(members, savedPost);
@@ -271,6 +286,9 @@ public class NotificationProcessor {
                 })
                 .forEach(client -> {
                     client.sendEvent("notification:created");
+                    logger.debug("[Socket] Send notification:created - UserId[{}]",
+                            client.getHandshakeData().getHttpHeaders().get("x-auth-id")
+                    );
                 });
 
         var notification = notifications.get(0);
@@ -301,10 +319,7 @@ public class NotificationProcessor {
     @Async
     public void processNewComment(Comment savedComment) {
         var classroom = savedComment.getPost().getClassroom();
-        var members = new ArrayList<User>();
-        members.add(classroom.getOwner());
-        members.addAll(classroom.getUsers());
-        members.addAll(classroom.getProviders());
+        var members = classroom.getMembers().stream().filter(m -> !m.getId().equals(savedComment.getAuthor().getId())).toList();
         var memberIds = members.stream().map(User::getId).toList();
 
         var notifications = notificationService.createNewCommentNotifications(members, savedComment);
@@ -318,6 +333,9 @@ public class NotificationProcessor {
                 })
                 .forEach(client -> {
                     client.sendEvent("notification:created");
+                    logger.debug("[Socket] Send notification:created - UserId[{}]",
+                            client.getHandshakeData().getHttpHeaders().get("x-auth-id")
+                    );
                 });
 
         var notification = notifications.get(0);
@@ -365,6 +383,9 @@ public class NotificationProcessor {
                     })
                     .forEach(client -> {
                         client.sendEvent("notification:created");
+                        logger.debug("[Socket] Send notification:created - UserId[{}]",
+                                client.getHandshakeData().getHttpHeaders().get("x-auth-id")
+                        );
                     });
 
             try {
@@ -406,5 +427,47 @@ public class NotificationProcessor {
         });
 
         CompletableFuture.allOf(createNotificationsFuture, sendMailFuture).join();
+    }
+
+
+    @Async
+    public void classroomDidUpdate(Classroom classroom, ClassroomUpdateType updateType) {
+        var memberIds = classroom.getMembers().stream().map(User::getId).toList();
+        socketIOServer.getNamespace("/notification")
+                .getAllClients()
+                .stream()
+                .filter(client -> memberIds.contains(client.getHandshakeData().getHttpHeaders().get("x-auth-id")))
+                .findFirst()
+                .ifPresent(client -> {
+                    HashMap<String, String> eventData = new HashMap<>();
+                    eventData.put("type", String.valueOf(updateType));
+                    client.sendEvent("classroom:updated", eventData);
+                    logger.debug("[Socket] Send classroom:updated - UserId[{}] - eventData[{}]",
+                            client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
+                            eventData
+                    );
+                });
+    }
+
+
+    @Async
+    public void classroomDidUpdate(String classroomId, ClassroomUpdateType updateType) {
+        var classroom = classroomRepository.findById(classroomId).orElse(null);
+        if (classroom == null) return;
+        var memberIds = classroom.getMembers().stream().map(User::getId).toList();
+        socketIOServer.getNamespace("/notification")
+                .getAllClients()
+                .stream()
+                .filter(client -> memberIds.contains(client.getHandshakeData().getHttpHeaders().get("x-auth-id")))
+                .findFirst()
+                .ifPresent(client -> {
+                    HashMap<String, String> eventData = new HashMap<>();
+                    eventData.put("type", String.valueOf(updateType));
+                    client.sendEvent("classroom:updated", eventData);
+                    logger.debug("[Socket] Send classroom:updated - UserId[{}] - eventData[{}]",
+                            client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
+                            eventData
+                    );
+                });
     }
 }

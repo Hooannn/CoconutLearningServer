@@ -5,6 +5,7 @@ import com.ht.elearning.comment.dtos.CreateCommentDto;
 import com.ht.elearning.comment.dtos.UpdateCommentDto;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.post.PostService;
+import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
 import com.ht.elearning.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,8 @@ public class CommentService {
     private final PostService postService;
 
     public Comment create(CreateCommentDto createCommentDto, String authorId) {
-        var isMember = classroomService.isMember(createCommentDto.getClassroomId(), authorId);
+        var classroom = classroomService.findById(createCommentDto.getClassroomId());
+        var isMember = classroomService.isMember(classroom, authorId);
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
 
         var post = postService.findById(createCommentDto.getPostId());
@@ -41,7 +43,7 @@ public class CommentService {
         var savedComment = commentRepository.save(comment);
 
         notificationProcessor.processNewComment(savedComment);
-
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.COMMENT);
         return savedComment;
     }
 
@@ -52,14 +54,16 @@ public class CommentService {
 
         Optional.ofNullable(updateCommentDto.getBody()).ifPresent(comment::setBody);
 
+        notificationProcessor.classroomDidUpdate(updateCommentDto.getClassroomId(), ClassroomUpdateType.COMMENT);
         return commentRepository.save(comment);
     }
 
 
-    public boolean delete(String id, String authorId) {
+    public boolean delete(String id, String classroomId, String authorId) {
         var comment = commentRepository.findByIdAndAuthorId(id, authorId)
                 .orElseThrow(() -> new HttpException("Comment not found", HttpStatus.BAD_REQUEST));
         commentRepository.delete(comment);
+        notificationProcessor.classroomDidUpdate(classroomId, ClassroomUpdateType.COMMENT);
         return true;
     }
 }

@@ -50,10 +50,10 @@ public class CommentController {
     }
 
 
-    @DeleteMapping("{commentId}")
-    public ResponseEntity<Response<?>> delete(@PathVariable String commentId) {
+    @DeleteMapping("/{classroomId}/{commentId}")
+    public ResponseEntity<Response<?>> delete(@PathVariable String commentId, @PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = commentService.delete(commentId, authentication.getPrincipal().toString());
+        var success = commentService.delete(commentId, classroomId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

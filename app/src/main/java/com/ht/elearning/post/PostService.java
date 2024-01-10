@@ -5,6 +5,7 @@ import com.ht.elearning.config.HttpException;
 import com.ht.elearning.file.FileRepository;
 import com.ht.elearning.post.dtos.CreatePostDto;
 import com.ht.elearning.post.dtos.UpdatePostDto;
+import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
 import com.ht.elearning.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,7 @@ public class PostService {
         var savedPost = postRepository.save(post);
 
         notificationProcessor.processNewPost(savedPost);
-
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.POST);
         return savedPost;
     }
 
@@ -60,13 +61,15 @@ public class PostService {
             post.setFiles(files);
         });
 
+        notificationProcessor.classroomDidUpdate(updatePostDto.getClassroomId(), ClassroomUpdateType.POST);
         return postRepository.save(post);
     }
 
 
-    public boolean delete(String postId, String authorId) {
+    public boolean delete(String postId, String classroomId, String authorId) {
         var post = postRepository.findByIdAndAuthorId(postId, authorId).orElseThrow(() -> new HttpException("Post not found", HttpStatus.BAD_REQUEST));
         postRepository.delete(post);
+        notificationProcessor.classroomDidUpdate(classroomId, ClassroomUpdateType.POST);
         return true;
     }
 

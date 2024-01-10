@@ -6,6 +6,7 @@ import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.invitation.InvitationRepository;
 import com.ht.elearning.invitation.InvitationType;
 import com.ht.elearning.notification.NotificationService;
+import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
 import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserService;
@@ -89,6 +90,7 @@ public class ClassroomService {
         var savedInvitation = invitationRepository.save(invitation);
 
         notificationProcessor.processClassroomInvitation(savedInvitation, classroom);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
 
         return true;
     }
@@ -115,6 +117,7 @@ public class ClassroomService {
         var savedInvitations = invitationRepository.saveAll(invitations);
 
         notificationProcessor.processClassroomInvitations(savedInvitations, classroom);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
 
         return true;
     }
@@ -135,7 +138,7 @@ public class ClassroomService {
         );
         var saved = classroomRepository.save(classroom);
         notificationProcessor.processClassroomJoining(saved, user);
-
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
         return true;
     }
 
@@ -162,6 +165,7 @@ public class ClassroomService {
 
         invitationRepository.delete(invitation);
         var saved = classroomRepository.save(classroom);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
         notificationProcessor.processClassroomJoining(saved, user);
         notificationService.markAsDone(notificationId);
         return true;
@@ -179,6 +183,7 @@ public class ClassroomService {
         );
 
         invitationRepository.delete(invitation);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
         notificationService.markAsDone(notificationId);
         return true;
     }
@@ -197,6 +202,7 @@ public class ClassroomService {
         classroom.getProviders().remove(user);
 
         var saved = classroomRepository.save(classroom);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
         notificationProcessor.processClassroomLeaving(saved, user);
 
         return true;
@@ -216,7 +222,11 @@ public class ClassroomService {
 
         classroom.setInviteCode(newClassCode);
 
-        return classroomRepository.save(classroom);
+        var savecClassroom = classroomRepository.save(classroom);
+
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSROOM);
+
+        return savecClassroom;
     }
 
 
@@ -250,6 +260,7 @@ public class ClassroomService {
                 () -> new HttpException("CLassroom not found", HttpStatus.BAD_REQUEST)
         );
         classroomRepository.delete(classroom);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSROOM);
         return true;
     }
 
@@ -263,7 +274,9 @@ public class ClassroomService {
         Optional.ofNullable(updateClassroomDto.getDescription()).ifPresent(classroom::setDescription);
         Optional.ofNullable(updateClassroomDto.getRoom()).ifPresent(classroom::setRoom);
         Optional.ofNullable(updateClassroomDto.getCoverImageUrl()).ifPresent(classroom::setCoverImageUrl);
-        return classroomRepository.save(classroom);
+        var savedClassroom = classroomRepository.save(classroom);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSROOM);
+        return savedClassroom;
     }
 
 
@@ -277,18 +290,20 @@ public class ClassroomService {
         classroom.getUsers().remove(memberToRemove);
 
         classroomRepository.save(classroom);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
         return true;
     }
 
 
     public boolean removeInvite(RemoveInviteDto removeInviteDto, String classroomId, String userId) {
-        var exists = classroomRepository.existsByIdAndOwnerId(classroomId, userId);
-        if (!exists)
-            throw new HttpException("Classroom not found or you don't have permission to do this.", HttpStatus.FORBIDDEN);
+        var classroom = classroomRepository.findByIdAndOwnerId(classroomId, userId).orElseThrow(
+                () -> new HttpException("Classroom not found or you don't have permission to do this.", HttpStatus.FORBIDDEN)
+        );
         var invitation = invitationRepository.findByEmailAndClassroomId(removeInviteDto.getEmail(), classroomId)
                 .orElseThrow(() -> new HttpException("Invitation not found", HttpStatus.BAD_REQUEST));
 
         invitationRepository.delete(invitation);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
         return true;
     }
 }

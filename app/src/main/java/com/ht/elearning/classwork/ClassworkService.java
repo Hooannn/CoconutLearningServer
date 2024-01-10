@@ -5,6 +5,7 @@ import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkDto;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.file.FileRepository;
+import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
 import com.ht.elearning.user.UserRepository;
 import com.ht.elearning.user.UserService;
@@ -63,6 +64,7 @@ public class ClassworkService {
         var savedClasswork = classworkRepository.save(classwork);
 
         notificationProcessor.processNewClasswork(savedClasswork);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
 
         return savedClasswork;
     }
@@ -94,18 +96,21 @@ public class ClassworkService {
             if (assignees.isEmpty()) throw new HttpException("Assignees must be specified", HttpStatus.BAD_REQUEST);
             classwork.setAssignees(assignees);
         });
-
-        return classworkRepository.save(classwork);
+        var savedClasswork = classworkRepository.save(classwork);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
+        return savedClasswork;
     }
 
 
     public boolean deleteById(String classworkId, String classroomId, String userId) {
-        var isMember = classroomService.isMember(classroomId, userId);
+        var classroom = classroomService.findById(classroomId);
+        var isMember = classroomService.isMember(classroom, userId);
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
         var classwork = classworkRepository.findById(classworkId)
                 .orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
 
         classworkRepository.delete(classwork);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
         return true;
     }
 }

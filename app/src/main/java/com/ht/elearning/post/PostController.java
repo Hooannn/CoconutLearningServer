@@ -65,10 +65,10 @@ public class PostController {
     }
 
 
-    @DeleteMapping("{postId}")
-    public ResponseEntity<Response<?>> delete(@PathVariable String postId) {
+    @DeleteMapping("/{classroomId}/{postId}")
+    public ResponseEntity<Response<?>> delete(@PathVariable String postId, @PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var success = postService.delete(postId, authentication.getPrincipal().toString());
+        var success = postService.delete(postId, classroomId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
