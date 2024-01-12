@@ -3,7 +3,6 @@ package com.ht.elearning.processor;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.google.firebase.messaging.Notification;
 import com.ht.elearning.classroom.Classroom;
-import com.ht.elearning.classroom.ClassroomRepository;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
 import com.ht.elearning.invitation.Invitation;
@@ -25,11 +24,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +35,6 @@ public class NotificationProcessor {
     private final MailService mailService;
     private final SocketIOServer socketIOServer;
     private final UserRepository userRepository;
-    private final ClassroomRepository classroomRepository;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
     @Value("${client.web.url}")
@@ -56,20 +52,9 @@ public class NotificationProcessor {
                 if (user != null) {
                     var notification = notificationService.createClassroomInvitation(user, classroom, invitation);
                     var target = user.getId();
-                    socketIOServer.getNamespace("/notification")
-                            .getAllClients()
-                            .stream()
-                            .filter(client -> client.getHandshakeData().getHttpHeaders().get("x-auth-id").equals(target))
-                            .findFirst()
-                            .ifPresent(client -> {
-                                HashMap<String, String> eventData = new HashMap<>();
-                                eventData.put("notification_id", notification.getId());
-                                client.sendEvent("notification:created", eventData);
-                                logger.debug("[Socket] Send notification:created - UserId[{}] - EventData[{}]",
-                                        client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
-                                        eventData
-                                );
-                            });
+                    HashMap<String, String> eventData = new HashMap<>();
+                    eventData.put("notification_id", notification.getId());
+                    notifySocket(target, "notification:created", eventData);
 
                     try {
                         var batchResponse = pushNotificationService.push(
@@ -134,19 +119,7 @@ public class NotificationProcessor {
                     var notifications = notificationService.createClassroomInvitations(users, classroom, invitations.get(0));
                     var notification = notifications.get(0);
                     var target = users.stream().map(User::getId).toList();
-                    socketIOServer.getNamespace("/notification")
-                            .getAllClients()
-                            .stream()
-                            .filter(client -> target.contains(client.getHandshakeData().getHttpHeaders().get("x-auth-id")))
-                            .findFirst()
-                            .ifPresent(client -> {
-                                HashMap<String, String> eventData = new HashMap<>();
-                                client.sendEvent("notification:created", eventData);
-                                logger.debug("[Socket] Send notification:created - UserId[{}] - EventData[{}]",
-                                        client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
-                                        eventData
-                                );
-                            });
+                    notifySocket(target, "notification:created", new HashMap<>());
 
                     try {
                         var batchResponse = pushNotificationService.push(
@@ -191,20 +164,9 @@ public class NotificationProcessor {
     public void processClassroomJoining(Classroom classroom, User user) {
         var notification = notificationService.createJoiningClassroomNotification(user, classroom);
         var target = classroom.getOwner().getId();
-        socketIOServer.getNamespace("/notification")
-                .getAllClients()
-                .stream()
-                .filter(client -> client.getHandshakeData().getHttpHeaders().get("x-auth-id").equals(target))
-                .findFirst()
-                .ifPresent(client -> {
-                    HashMap<String, String> eventData = new HashMap<>();
-                    eventData.put("notification_id", notification.getId());
-                    client.sendEvent("notification:created", eventData);
-                    logger.debug("[Socket] Send notification:created - UserId[{}] - EventData[{}]",
-                            client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
-                            eventData
-                    );
-                });
+        HashMap<String, String> eventData = new HashMap<>();
+        eventData.put("notification_id", notification.getId());
+        notifySocket(target, "notification:created", eventData);
 
         try {
             var batchResponse = pushNotificationService.push(
@@ -232,20 +194,9 @@ public class NotificationProcessor {
     public void processClassroomLeaving(Classroom classroom, User user) {
         var notification = notificationService.createLeavingClassroomNotification(user, classroom);
         var target = classroom.getOwner().getId();
-        socketIOServer.getNamespace("/notification")
-                .getAllClients()
-                .stream()
-                .filter(client -> client.getHandshakeData().getHttpHeaders().get("x-auth-id").equals(target))
-                .findFirst()
-                .ifPresent(client -> {
-                    HashMap<String, String> eventData = new HashMap<>();
-                    eventData.put("notification_id", notification.getId());
-                    client.sendEvent("notification:created", eventData);
-                    logger.debug("[Socket] Send notification:created - UserId[{}] - EventData[{}]",
-                            client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
-                            eventData
-                    );
-                });
+        HashMap<String, String> eventData = new HashMap<>();
+        eventData.put("notification_id", notification.getId());
+        notifySocket(target, "notification:created", eventData);
 
         try {
             var batchResponse = pushNotificationService.push(
@@ -276,20 +227,7 @@ public class NotificationProcessor {
         var memberIds = members.stream().map(User::getId).toList();
 
         var notifications = notificationService.createNewPostNotifications(members, savedPost);
-
-        socketIOServer.getNamespace("/notification")
-                .getAllClients()
-                .stream()
-                .filter(client -> {
-                    String authId = client.getHandshakeData().getHttpHeaders().get("x-auth-id");
-                    return memberIds.contains(authId);
-                })
-                .forEach(client -> {
-                    client.sendEvent("notification:created");
-                    logger.debug("[Socket] Send notification:created - UserId[{}]",
-                            client.getHandshakeData().getHttpHeaders().get("x-auth-id")
-                    );
-                });
+        notifySocket(memberIds, "notification:created", new HashMap<>());
 
         var notification = notifications.get(0);
 
@@ -323,20 +261,7 @@ public class NotificationProcessor {
         var memberIds = members.stream().map(User::getId).toList();
 
         var notifications = notificationService.createNewCommentNotifications(members, savedComment);
-
-        socketIOServer.getNamespace("/notification")
-                .getAllClients()
-                .stream()
-                .filter(client -> {
-                    String authId = client.getHandshakeData().getHttpHeaders().get("x-auth-id");
-                    return memberIds.contains(authId);
-                })
-                .forEach(client -> {
-                    client.sendEvent("notification:created");
-                    logger.debug("[Socket] Send notification:created - UserId[{}]",
-                            client.getHandshakeData().getHttpHeaders().get("x-auth-id")
-                    );
-                });
+        notifySocket(memberIds, "notification:created", new HashMap<>());
 
         var notification = notifications.get(0);
 
@@ -374,19 +299,7 @@ public class NotificationProcessor {
             var notifications = notificationService.createNewClassworkNotifications(recipients, savedClasswork);
             var notification = notifications.get(0);
             var recipientIds = recipients.stream().map(User::getId).toList();
-            socketIOServer.getNamespace("/notification")
-                    .getAllClients()
-                    .stream()
-                    .filter(client -> {
-                        String authId = client.getHandshakeData().getHttpHeaders().get("x-auth-id");
-                        return recipientIds.contains(authId);
-                    })
-                    .forEach(client -> {
-                        client.sendEvent("notification:created");
-                        logger.debug("[Socket] Send notification:created - UserId[{}]",
-                                client.getHandshakeData().getHttpHeaders().get("x-auth-id")
-                        );
-                    });
+            notifySocket(recipientIds, "notification:created", new HashMap<>());
 
             try {
                 var batchResponse = pushNotificationService.push(
@@ -433,40 +346,41 @@ public class NotificationProcessor {
     @Async
     public void classroomDidUpdate(Classroom classroom, ClassroomUpdateType updateType) {
         var memberIds = classroom.getMembers().stream().map(User::getId).toList();
+        HashMap<String, String> eventData = new HashMap<>();
+        eventData.put("type", String.valueOf(updateType));
+        eventData.put("classroom_id", classroom.getId());
+        notifySocket(memberIds, "classroom:updated", eventData);
+    }
+
+
+    private void notifySocket(List<String> memberIds, String event, HashMap<String, String> eventData) {
         socketIOServer.getNamespace("/notification")
                 .getAllClients()
                 .stream()
                 .filter(client -> memberIds.contains(client.getHandshakeData().getHttpHeaders().get("x-auth-id")))
-                .findFirst()
-                .ifPresent(client -> {
-                    HashMap<String, String> eventData = new HashMap<>();
-                    eventData.put("type", String.valueOf(updateType));
-                    client.sendEvent("classroom:updated", eventData);
-                    logger.debug("[Socket] Send classroom:updated - UserId[{}] - eventData[{}]",
-                            client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
-                            eventData
+                .forEach(client -> {
+                    client.sendEvent(event, eventData);
+                    logger.debug("[Socket] Send Event[{}] - EventData[{}] - UserId[{}]",
+                            event,
+                            eventData,
+                            client.getHandshakeData().getHttpHeaders().get("x-auth-id")
                     );
                 });
     }
 
 
-    @Async
-    public void classroomDidUpdate(String classroomId, ClassroomUpdateType updateType) {
-        var classroom = classroomRepository.findById(classroomId).orElse(null);
-        if (classroom == null) return;
-        var memberIds = classroom.getMembers().stream().map(User::getId).toList();
+    private void notifySocket(String memberId, String event, HashMap<String, String> eventData) {
         socketIOServer.getNamespace("/notification")
                 .getAllClients()
                 .stream()
-                .filter(client -> memberIds.contains(client.getHandshakeData().getHttpHeaders().get("x-auth-id")))
+                .filter(client -> client.getHandshakeData().getHttpHeaders().get("x-auth-id").equals(memberId))
                 .findFirst()
                 .ifPresent(client -> {
-                    HashMap<String, String> eventData = new HashMap<>();
-                    eventData.put("type", String.valueOf(updateType));
-                    client.sendEvent("classroom:updated", eventData);
-                    logger.debug("[Socket] Send classroom:updated - UserId[{}] - eventData[{}]",
-                            client.getHandshakeData().getHttpHeaders().get("x-auth-id"),
-                            eventData
+                    client.sendEvent(event, eventData);
+                    logger.debug("[Socket] Send Event[{}] - EventData[{}] - UserId[{}]",
+                            event,
+                            eventData,
+                            client.getHandshakeData().getHttpHeaders().get("x-auth-id")
                     );
                 });
     }

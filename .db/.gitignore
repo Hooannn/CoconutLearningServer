@@ -1,3 +1,6 @@
 /redis
 /postgres
 /elasticsearch
+/seaweedfs-master
+/seaweedfs-volume
+/logging

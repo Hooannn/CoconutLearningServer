@@ -49,21 +49,23 @@ public class CommentService {
 
 
     public Comment update(UpdateCommentDto updateCommentDto, String commentId, String authorId) {
+        var classroom = classroomService.findById(updateCommentDto.getClassroomId());
         var comment = commentRepository.findByIdAndAuthorId(commentId, authorId)
                 .orElseThrow(() -> new HttpException("Comment not found", HttpStatus.BAD_REQUEST));
 
         Optional.ofNullable(updateCommentDto.getBody()).ifPresent(comment::setBody);
 
-        notificationProcessor.classroomDidUpdate(updateCommentDto.getClassroomId(), ClassroomUpdateType.COMMENT);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.COMMENT);
         return commentRepository.save(comment);
     }
 
 
     public boolean delete(String id, String classroomId, String authorId) {
+        var classroom = classroomService.findById(classroomId);
         var comment = commentRepository.findByIdAndAuthorId(id, authorId)
                 .orElseThrow(() -> new HttpException("Comment not found", HttpStatus.BAD_REQUEST));
         commentRepository.delete(comment);
-        notificationProcessor.classroomDidUpdate(classroomId, ClassroomUpdateType.COMMENT);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.COMMENT);
         return true;
     }
 }

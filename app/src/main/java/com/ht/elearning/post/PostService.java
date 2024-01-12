@@ -54,6 +54,7 @@ public class PostService {
 
 
     public Post update(UpdatePostDto updatePostDto, String postId, String authorId) {
+        var classroom = classroomService.findById(updatePostDto.getClassroomId());
         var post = postRepository.findByIdAndAuthorId(postId, authorId).orElseThrow(() -> new HttpException("Post not found", HttpStatus.BAD_REQUEST));
         Optional.ofNullable(updatePostDto.getBody()).ifPresent(post::setBody);
         Optional.ofNullable(updatePostDto.getFileIds()).ifPresent(fileIds -> {
@@ -61,15 +62,16 @@ public class PostService {
             post.setFiles(files);
         });
 
-        notificationProcessor.classroomDidUpdate(updatePostDto.getClassroomId(), ClassroomUpdateType.POST);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.POST);
         return postRepository.save(post);
     }
 
 
     public boolean delete(String postId, String classroomId, String authorId) {
+        var classroom = classroomService.findById(classroomId);
         var post = postRepository.findByIdAndAuthorId(postId, authorId).orElseThrow(() -> new HttpException("Post not found", HttpStatus.BAD_REQUEST));
         postRepository.delete(post);
-        notificationProcessor.classroomDidUpdate(classroomId, ClassroomUpdateType.POST);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.POST);
         return true;
     }
 

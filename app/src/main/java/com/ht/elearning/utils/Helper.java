@@ -11,4 +11,8 @@ public class Helper {
         // Use Base64 encoding to represent the random bytes as a string
         return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
+
+    public static boolean isEmail(String str) {
+        return str.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
+    }
 }

@@ -35,3 +35,25 @@ services:
       - "6379:6379"
     volumes:
       - ./.db/redis/volume:/data
+
+  seaweedfs-master:
+    image: chrislusf/seaweedfs
+    ports:
+      - 9333:9333
+      - 19333:19333
+      - 9324:9324
+    volumes:
+      - ./.db/seaweedfs-master:/data
+    command: "master -ip=master -ip.bind=0.0.0.0 -metricsPort=9324"
+
+  seaweedfs-volume:
+    image: chrislusf/seaweedfs
+    ports:
+      - 8082:8082
+      - 18080:18080
+      - 9325:9325
+    volumes:
+      - ./.db/seaweedfs-volume:/data
+    command: 'volume -mserver="seaweedfs-master:9333" -ip.bind=0.0.0.0 -port=8082  -metricsPort=9325'
+    depends_on:
+      - seaweedfs-master

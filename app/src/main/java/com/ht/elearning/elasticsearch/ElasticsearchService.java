@@ -7,7 +7,7 @@ import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.ht.elearning.user.User;
-import jakarta.validation.Validator;
+import com.ht.elearning.utils.Helper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Service
@@ -76,7 +75,7 @@ public class ElasticsearchService {
 
 
     public SearchResponse<User> lookupUsers(String query) throws IOException {
-        if (query.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
+        if (Helper.isEmail(query)) {
             return elasticsearchClient.search(s -> s
                             .index("users")
                             .query(q ->
