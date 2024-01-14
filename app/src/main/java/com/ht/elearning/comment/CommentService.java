@@ -1,7 +1,9 @@
 package com.ht.elearning.comment;
 
 import com.ht.elearning.classroom.ClassroomService;
-import com.ht.elearning.comment.dtos.CreateCommentDto;
+import com.ht.elearning.classwork.ClassworkService;
+import com.ht.elearning.comment.dtos.CreateClassworkCommentDto;
+import com.ht.elearning.comment.dtos.CreatePostCommentDto;
 import com.ht.elearning.comment.dtos.UpdateCommentDto;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.post.PostService;
@@ -23,21 +25,47 @@ public class CommentService {
     private final UserService userService;
     private final NotificationProcessor notificationProcessor;
     private final PostService postService;
+    private final ClassworkService classworkService;
 
-    public Comment create(CreateCommentDto createCommentDto, String authorId) {
-        var classroom = classroomService.findById(createCommentDto.getClassroomId());
+
+    public Comment createForPost(CreatePostCommentDto createPostCommentDto, String authorId) {
+        var classroom = classroomService.findById(createPostCommentDto.getClassroomId());
         var isMember = classroomService.isMember(classroom, authorId);
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
 
-        var post = postService.findById(createCommentDto.getPostId());
-        if (!post.getClassroom().getId().equals(createCommentDto.getClassroomId()))
+        var post = postService.findById(createPostCommentDto.getPostId());
+        if (!post.getClassroom().getId().equals(createPostCommentDto.getClassroomId()))
             throw new HttpException("No permission", HttpStatus.FORBIDDEN);
 
         var author = userService.findById(authorId);
         var comment = Comment.builder()
-                .body(createCommentDto.getBody())
+                .body(createPostCommentDto.getBody())
                 .author(author)
                 .post(post)
+                .build();
+
+        var savedComment = commentRepository.save(comment);
+
+        notificationProcessor.processNewComment(savedComment);
+        notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.COMMENT);
+        return savedComment;
+    }
+
+
+    public Comment createForClasswork(CreateClassworkCommentDto createClassworkCommentDto, String authorId) {
+        var classroom = classroomService.findById(createClassworkCommentDto.getClassroomId());
+        var isMember = classroomService.isMember(classroom, authorId);
+        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+
+        var classwork = classworkService.findById(createClassworkCommentDto.getClassworkId());
+        if (!classwork.getClassroom().getId().equals(createClassworkCommentDto.getClassroomId()))
+            throw new HttpException("No permission", HttpStatus.FORBIDDEN);
+
+        var author = userService.findById(authorId);
+        var comment = Comment.builder()
+                .body(createClassworkCommentDto.getBody())
+                .author(author)
+                .classwork(classwork)
                 .build();
 
         var savedComment = commentRepository.save(comment);

@@ -2,7 +2,9 @@ package com.ht.elearning.classwork;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ht.elearning.assignment.Assignment;
 import com.ht.elearning.classroom.Classroom;
+import com.ht.elearning.comment.Comment;
 import com.ht.elearning.config.BaseEntity;
 import com.ht.elearning.file.File;
 import com.ht.elearning.user.User;
@@ -42,6 +44,12 @@ public class Classwork extends BaseEntity {
     private int score;
 
     private Date deadline;
+
+    @OneToMany(mappedBy = "classwork", targetEntity = Comment.class, cascade = CascadeType.REMOVE)
+    private List<Comment> comments;
+
+    @OneToMany(mappedBy = "classwork", targetEntity = Assignment.class, cascade = CascadeType.REMOVE)
+    private List<Assignment> assignments;
 
     @ManyToMany
     @JoinTable(

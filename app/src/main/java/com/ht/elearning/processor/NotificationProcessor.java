@@ -5,6 +5,7 @@ import com.google.firebase.messaging.Notification;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
+import com.ht.elearning.comment.CommentRepository;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.mail.MailService;
 import com.ht.elearning.notification.NotificationService;
@@ -27,6 +28,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +38,7 @@ public class NotificationProcessor {
     private final MailService mailService;
     private final SocketIOServer socketIOServer;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
     @Value("${client.web.url}")
@@ -256,18 +260,21 @@ public class NotificationProcessor {
 
     @Async
     public void processNewComment(Comment savedComment) {
-        var classroom = savedComment.getPost().getClassroom();
-        var members = classroom.getMembers().stream().filter(m -> !m.getId().equals(savedComment.getAuthor().getId())).toList();
-        var memberIds = members.stream().map(User::getId).toList();
+        var recipient = savedComment.getPost() == null ?
+                savedComment.getClasswork().getAuthor() :
+                savedComment.getPost().getAuthor();
 
-        var notifications = notificationService.createNewCommentNotifications(members, savedComment);
-        notifySocket(memberIds, "notification:created", new HashMap<>());
+        if (recipient.getId().equals(savedComment.getAuthor().getId())) return;
+
+        var notifications = notificationService.createNewCommentNotifications(List.of(recipient), savedComment);
+
+        notifySocket(recipient.getId(), "notification:created", new HashMap<>());
 
         var notification = notifications.get(0);
 
         try {
             var batchResponse = pushNotificationService.push(
-                    memberIds,
+                    recipient.getId(),
                     Notification.builder()
                             .setBody(notification.getContent())
                             .setTitle(notification.getTitle())
@@ -282,7 +289,7 @@ public class NotificationProcessor {
         } catch (Exception e) {
             logger.warn(
                     "Handle[processNewComment] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                    memberIds, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                    recipient.getId(), notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
             );
         }
     }
@@ -295,7 +302,13 @@ public class NotificationProcessor {
 
         //Create notification for assignees and other providers
         CompletableFuture<Void> createNotificationsFuture = CompletableFuture.runAsync(() -> {
-            List<User> recipients = classroom.getMembers().stream().filter(m -> !m.getId().equals(author.getId())).toList();
+            List<User> providers = classroom.getProviders();
+            List<User> assignees = savedClasswork.getAssignees();
+            List<User> recipients = Stream.concat(providers.stream(), assignees.stream())
+                    .filter(r -> !r.getId().equals(author.getId()))
+                    .toList();
+
+
             var notifications = notificationService.createNewClassworkNotifications(recipients, savedClasswork);
             var notification = notifications.get(0);
             var recipientIds = recipients.stream().map(User::getId).toList();

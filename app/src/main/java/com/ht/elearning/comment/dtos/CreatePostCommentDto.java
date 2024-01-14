@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateCommentDto {
+public class CreatePostCommentDto {
     @NotEmpty(message = "Body must not be empty")
     private String body;
 

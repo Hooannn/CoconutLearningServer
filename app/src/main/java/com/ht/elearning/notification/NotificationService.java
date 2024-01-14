@@ -126,14 +126,20 @@ public class NotificationService {
 
 
     public List<Notification> createNewCommentNotifications(List<User> recipients, Comment savedComment) {
-        var classroom = savedComment.getPost().getClassroom();
+        var classroom = savedComment.getPost() == null ?
+                savedComment.getClasswork().getClassroom() :
+                savedComment.getPost().getClassroom();
+
         var author = savedComment.getAuthor();
-        var urlString = "/classroom/" + classroom.getId();
+
+        var urlString = savedComment.getPost() == null ?
+                "/classroom/" + classroom.getId() + "/classwork/" + savedComment.getClasswork().getId() :
+                "/classroom/" + classroom.getId();
 
         List<Notification> notifications = recipients.stream().map(
                 recipient -> Notification.builder()
                         .title("Classroom: '" + classroom.getName() + "'")
-                        .content(author.getFullName() + " commented to post: " + "\"" + savedComment.getBody() + "\"")
+                        .content(author.getFullName() + " added new comment: " + "\"" + savedComment.getBody() + "\"")
                         .redirectUrl(urlString)
                         .recipient(recipient)
                         .imageUrl(author.getAvatarUrl())
@@ -147,7 +153,7 @@ public class NotificationService {
     public List<Notification> createNewClassworkNotifications(List<User> recipients, Classwork savedClasswork) {
         var classroom = savedClasswork.getClassroom();
         var author = savedClasswork.getAuthor();
-        var urlString = "/classroom/" + savedClasswork.getId() + "?tab=classwork";
+        var urlString = "/classroom/" + classroom.getId() + "/classwork/" + savedClasswork.getId();
 
         List<Notification> notifications = recipients.stream().map(
                 recipient -> Notification.builder()

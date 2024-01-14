@@ -243,6 +243,19 @@ public class ClassroomService {
     }
 
 
+    public boolean isProvider(String classId, String userId) {
+        var classroom = classroomRepository.findById(classId).orElse(null);
+        if (classroom == null) return false;
+
+        return classroom.getProviders().stream().anyMatch(u -> u.getId().equals(userId)) || classroom.getOwner().getId().equals(userId);
+    }
+
+
+    public boolean isProvider(Classroom classroom, String userId) {
+        return classroom.getProviders().stream().anyMatch(u -> u.getId().equals(userId)) || classroom.getOwner().getId().equals(userId);
+    }
+
+
     public List<Classroom> findTeachingClassrooms(String userId) {
         var teachingClassrooms = classroomRepository.findAllTeachingClassrooms(userId);
         var createdClassrooms = classroomRepository.findAllByOwnerId(userId);

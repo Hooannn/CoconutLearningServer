@@ -1,6 +1,7 @@
 package com.ht.elearning.comment;
 
-import com.ht.elearning.comment.dtos.CreateCommentDto;
+import com.ht.elearning.comment.dtos.CreateClassworkCommentDto;
+import com.ht.elearning.comment.dtos.CreatePostCommentDto;
 import com.ht.elearning.comment.dtos.UpdateCommentDto;
 import com.ht.elearning.config.Response;
 import jakarta.validation.Valid;
@@ -20,10 +21,25 @@ public class CommentController {
     private final CommentService commentService;
 
 
-    @PostMapping
-    public ResponseEntity<Response<Comment>> create(@Valid @RequestBody CreateCommentDto createCommentDto) {
+    @PostMapping("/post")
+    public ResponseEntity<Response<Comment>> create(@Valid @RequestBody CreatePostCommentDto createPostCommentDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var comment = commentService.create(createCommentDto, authentication.getPrincipal().toString());
+        var comment = commentService.createForPost(createPostCommentDto, authentication.getPrincipal().toString());
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        "Created successfully",
+                        true,
+                        comment
+                )
+        );
+    }
+
+
+    @PostMapping("/classwork")
+    public ResponseEntity<Response<Comment>> create(@Valid @RequestBody CreateClassworkCommentDto createClassworkCommentDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var comment = commentService.createForClasswork(createClassworkCommentDto, authentication.getPrincipal().toString());
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),

@@ -23,8 +23,8 @@ public class ClassworkCategoryService {
 
     public ClassworkCategory create(CreateClassworkCategoryDto createClassworkCategoryDto, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
-        var isMember = classroomService.isMember(classroom, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        var isProvider = classroomService.isProvider(classroom, userId);
+        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
 
         var category = ClassworkCategory.builder()
                 .name(createClassworkCategoryDto.getName())
@@ -39,8 +39,8 @@ public class ClassworkCategoryService {
 
     public ClassworkCategory update(UpdateClassworkCategoryDto updateClassworkCategoryDto, String categoryId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
-        var isMember = classroomService.isMember(classroom, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        var isProvider = classroomService.isProvider(classroom, userId);
+        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
 
         var category = classworkCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
@@ -55,8 +55,9 @@ public class ClassworkCategoryService {
 
     public boolean deleteById(String categoryId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
-        var isMember = classroomService.isMember(classroom, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        var isProvider = classroomService.isProvider(classroom, userId);
+        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
+        
         var category = classworkCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
 

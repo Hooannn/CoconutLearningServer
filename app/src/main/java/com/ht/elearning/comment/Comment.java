@@ -1,6 +1,7 @@
 package com.ht.elearning.comment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.config.BaseEntity;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
@@ -31,6 +32,11 @@ public class Comment extends BaseEntity {
 
     @ManyToOne()
     @JsonIgnore
-    @JoinColumn(name = "post_id", nullable = false)
+    @JoinColumn(name = "post_id")
     private Post post;
+
+    @ManyToOne()
+    @JsonIgnore
+    @JoinColumn(name = "classwork_id")
+    private Classwork classwork;
 }

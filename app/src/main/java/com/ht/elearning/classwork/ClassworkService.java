@@ -7,7 +7,6 @@ import com.ht.elearning.config.HttpException;
 import com.ht.elearning.file.FileRepository;
 import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
-import com.ht.elearning.user.UserRepository;
 import com.ht.elearning.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,8 +36,8 @@ public class ClassworkService {
 
     public Classwork create(CreateClassworkDto createClassworkDto, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
-        var isMember = classroomService.isMember(classroom, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        var isProvider = classroomService.isProvider(classroom, userId);
+        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
         var category = createClassworkDto.getCategoryId() != null ? classworkCategoryService.findByIdAndClassroomId(createClassworkDto.getCategoryId(), classroomId) : null;
         var files = fileRepository.findAllById(createClassworkDto.getFileIds());
 
@@ -72,8 +71,8 @@ public class ClassworkService {
 
     public Classwork update(UpdateClassworkDto updateClassworkDto, String classworkId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
-        var isMember = classroomService.isMember(classroom, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        var isProvider = classroomService.isProvider(classroom, userId);
+        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
         var classwork = classworkRepository.findById(classworkId).orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
         Optional.ofNullable(updateClassworkDto.getTitle()).ifPresent(classwork::setTitle);
         Optional.ofNullable(updateClassworkDto.getDescription()).ifPresent(classwork::setDescription);
@@ -104,13 +103,25 @@ public class ClassworkService {
 
     public boolean deleteById(String classworkId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
-        var isMember = classroomService.isMember(classroom, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        var isProvider = classroomService.isProvider(classroom, userId);
+        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
         var classwork = classworkRepository.findById(classworkId)
                 .orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
 
         classworkRepository.delete(classwork);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
         return true;
+    }
+
+
+    public Classwork findById(String id) {
+        return classworkRepository.findById(id).orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
+    }
+
+
+    public Classwork find(String classworkId, String classroomId, String userId) {
+        var isMember = classroomService.isMember(classroomId, userId);
+        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        return findById(classworkId);
     }
 }

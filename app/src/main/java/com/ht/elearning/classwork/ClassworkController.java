@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -44,7 +43,6 @@ public class ClassworkController {
 
 
     @PostMapping("/{classroomId}/categories")
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<ClassworkCategory>> createCategory(
             @Valid @RequestBody CreateClassworkCategoryDto createClassworkCategoryDto,
             @PathVariable String classroomId
@@ -63,7 +61,6 @@ public class ClassworkController {
 
 
     @PutMapping("/{classroomId}/categories/{categoryId}")
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<ClassworkCategory>> updateCategory(
             @PathVariable String categoryId,
             @PathVariable String classroomId,
@@ -82,7 +79,6 @@ public class ClassworkController {
 
 
     @DeleteMapping("/{classroomId}/categories/{categoryId}")
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<?>> deleteCategory(@PathVariable String categoryId, @PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var success = classworkCategoryService.deleteById(categoryId, classroomId, authentication.getPrincipal().toString());
@@ -114,8 +110,25 @@ public class ClassworkController {
     }
 
 
+    @GetMapping("/{classroomId}/{classworkId}")
+    public ResponseEntity<Response<Classwork>> find(
+            @PathVariable String classroomId,
+            @PathVariable String classworkId
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classwork = classworkService.find(classworkId, classroomId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "ok",
+                        true,
+                        classwork
+                )
+        );
+    }
+
+
     @PostMapping("/{classroomId}")
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<Classwork>> create(
             @Valid @RequestBody CreateClassworkDto createClassworkDto,
             @PathVariable String classroomId
@@ -134,7 +147,6 @@ public class ClassworkController {
 
 
     @PutMapping("/{classroomId}/{classworkId}")
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<Classwork>> update(
             @Valid @RequestBody UpdateClassworkDto updateClassworkDto,
             @PathVariable String classroomId,
@@ -154,7 +166,6 @@ public class ClassworkController {
 
 
     @DeleteMapping("/{classroomId}/{classworkId}")
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
     public ResponseEntity<Response<Classwork>> delete(
             @PathVariable String classroomId,
             @PathVariable String classworkId
