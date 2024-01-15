@@ -19,6 +19,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -154,6 +155,16 @@ public class FileService {
 
         return true;
     }
+
+
+    public List<File> findAllById(List<String> fileIds) {
+        return fileRepository.findAllById(fileIds);
+    }
+
+    public List<File> findAllById(Set<String> fileIds) {
+        return fileRepository.findAllById(fileIds);
+    }
+
 }
 
 @Data

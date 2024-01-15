@@ -56,9 +56,9 @@ public class UserService {
             var savedUser = save(user);
 
             if (savedUser.isVerified()) {
-                appProcessor.processWelcomeUser(savedUser);
+                appProcessor.userDidVerify(savedUser);
             } else {
-                appProcessor.processAccountVerification(savedUser);
+                appProcessor.userDidCreate(savedUser);
             }
 
             return savedUser;

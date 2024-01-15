@@ -61,7 +61,7 @@ public class AuthService {
                 .build();
         var savedUser = userService.save(user);
         try {
-            appProcessor.processAccountVerification(savedUser);
+            appProcessor.userDidCreate(savedUser);
         } catch (MessagingException e) {
             logger.error("Error while processing account verification - Email[{}] - Message[{}]", user.getEmail(), e.getMessage());
         }
@@ -71,6 +71,7 @@ public class AuthService {
                 .user(savedUser)
                 .build();
     }
+
 
     public AuthenticationResponse authenticate(AuthenticateDto authenticateDto) {
         authenticationManager.authenticate(
@@ -104,7 +105,7 @@ public class AuthService {
             user.setVerified(true);
             var savedUser = userService.save(user);
             try {
-                appProcessor.processWelcomeUser(user);
+                appProcessor.userDidVerify(user);
             } catch (MessagingException e) {
                 logger.error("Error while processing welcome user - Email[{}] - Message[{}]", user.getEmail(), e.getMessage());
             }
@@ -123,7 +124,7 @@ public class AuthService {
         boolean exists = userRepository.existsByEmail(email);
         if (!exists) throw new HttpException("Bad request", HttpStatus.BAD_REQUEST);
         try {
-            appProcessor.processForgotPassword(email);
+            appProcessor.userDidForgetPassword(email);
         } catch (MessagingException e) {
             logger.error("Error while processing forgot password - Email[{}] - Message[{}]", email, e.getMessage());
         }
@@ -179,12 +180,13 @@ public class AuthService {
     public boolean resendAccountVerification(ResendAccountVerificationDto resendAccountVerificationDto) {
         var user = userRepository.findByEmail(resendAccountVerificationDto.getEmail()).orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
         try {
-            appProcessor.processAccountVerification(user);
+            appProcessor.userDidCreate(user);
         } catch (MessagingException e) {
             logger.error("Error while processing account verification - Email[{}] - Message[{}]", user.getEmail(), e.getMessage());
         }
         return true;
     }
+
 
     public AuthenticationResponse authenticateWithGoogle(GoogleAuthDto googleAuthDto) {
         WebClient webClient = WebClient
@@ -194,6 +196,7 @@ public class AuthService {
                 })
                 .baseUrl("https://www.googleapis.com")
                 .build();
+
         var googleUserInfo = webClient
                 .get().uri("/oauth2/v3/userinfo")
                 .retrieve()
@@ -207,12 +210,13 @@ public class AuthService {
         if (googleUserInfo == null) throw new HttpException("Invalid credentials", HttpStatus.FORBIDDEN);
 
         var user = userRepository.findByEmail(googleUserInfo.getEmail()).orElse(null);
-
+        boolean isNew = true;
         if (user != null) {
             user.setAvatarUrl(googleUserInfo.getPicture());
             user.setLastName(googleUserInfo.getFamilyName());
             user.setFirstName(googleUserInfo.getGivenName());
             user.setVerified(true);
+            isNew = false;
         } else {
             user = User.builder()
                     .email(googleUserInfo.getEmail())
@@ -226,6 +230,15 @@ public class AuthService {
         }
 
         userService.save(user);
+        
+        if (isNew) {
+            try {
+                appProcessor.userDidVerify(user);
+            } catch (MessagingException e) {
+                logger.error("Error while processing welcome user - Email[{}] - Message[{}]", user.getEmail(), e.getMessage());
+            }
+        }
+
         return AuthenticationResponse
                 .builder()
                 .credentials(getCredentials(user))

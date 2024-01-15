@@ -1,5 +1,6 @@
 package com.ht.elearning.notification;
 
+import com.ht.elearning.assignment.Assignment;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
@@ -77,7 +78,7 @@ public class NotificationService {
     }
 
 
-    public Notification createJoiningClassroomNotification(User user, Classroom classroom) {
+    public Notification createMemberDidJoinNotification(User user, Classroom classroom) {
         var urlString = "/classroom/" + classroom.getId() + "?tab=members";
         Notification notification = Notification.builder()
                 .title("Classroom: '" + classroom.getName() + "'")
@@ -91,7 +92,7 @@ public class NotificationService {
     }
 
 
-    public Notification createLeavingClassroomNotification(User user, Classroom classroom) {
+    public Notification createMemberDidLeaveNotification(User user, Classroom classroom) {
         var urlString = "/classroom/" + classroom.getId() + "?tab=members";
 
         Notification notification = Notification.builder()
@@ -106,7 +107,7 @@ public class NotificationService {
     }
 
 
-    public List<Notification> createNewPostNotifications(List<User> recipients, Post savedPost) {
+    public List<Notification> createPostDidCreateNotifications(List<User> recipients, Post savedPost) {
         var classroom = savedPost.getClassroom();
         var author = savedPost.getAuthor();
         var urlString = "/classroom/" + classroom.getId();
@@ -125,7 +126,7 @@ public class NotificationService {
     }
 
 
-    public List<Notification> createNewCommentNotifications(List<User> recipients, Comment savedComment) {
+    public List<Notification> createCommentDidCreateNotifications(List<User> recipients, Comment savedComment) {
         var classroom = savedComment.getPost() == null ?
                 savedComment.getClasswork().getClassroom() :
                 savedComment.getPost().getClassroom();
@@ -150,7 +151,7 @@ public class NotificationService {
     }
 
 
-    public List<Notification> createNewClassworkNotifications(List<User> recipients, Classwork savedClasswork) {
+    public List<Notification> createClassworkDidCreateNotifications(List<User> recipients, Classwork savedClasswork) {
         var classroom = savedClasswork.getClassroom();
         var author = savedClasswork.getAuthor();
         var urlString = "/classroom/" + classroom.getId() + "/classwork/" + savedClasswork.getId();
@@ -166,6 +167,24 @@ public class NotificationService {
         ).toList();
 
         return notificationRepository.saveAll(notifications);
+    }
+
+
+    public Notification createAssignmentDidCreateNotification(User recipient, Assignment savedAssignment) {
+        var classwork = savedAssignment.getClasswork();
+        var classroom = classwork.getClassroom();
+        var author = savedAssignment.getAuthor();
+        var urlString = "/classroom/" + classroom.getId() + "/classwork/" + classwork.getId() + "?tab=student_assignments";
+
+        Notification notification = Notification.builder()
+                .title("Classroom: '" + classroom.getName() + "'")
+                .content(author.getFullName() + " submitted new assignment")
+                .redirectUrl(urlString)
+                .recipient(recipient)
+                .imageUrl(author.getAvatarUrl())
+                .build();
+
+        return notificationRepository.save(notification);
     }
 
 

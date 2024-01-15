@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -20,10 +20,10 @@ public class UpdateClassworkDto {
     private Date deadline;
 
     @JsonProperty("assignee_ids")
-    private List<String> assigneeIds;
+    private Set<String> assigneeIds;
 
     @JsonProperty("file_ids")
-    private List<String> fileIds;
+    private Set<String> fileIds;
 
     @JsonProperty("category_id")
     private String categoryId;

@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -31,11 +31,11 @@ public class CreateClassworkDto {
 
     @NotNull(message = "Assignee ids must not be null")
     @JsonProperty("assignee_ids")
-    private List<String> assigneeIds;
+    private Set<String> assigneeIds;
 
     @NotNull(message = "File ids must not be null")
     @JsonProperty("file_ids")
-    private List<String> fileIds;
+    private Set<String> fileIds;
 
     @JsonProperty("category_id")
     private String categoryId;

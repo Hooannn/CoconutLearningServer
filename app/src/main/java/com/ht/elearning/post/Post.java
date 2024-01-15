@@ -51,5 +51,5 @@ public class Post extends BaseEntity {
             joinColumns = @JoinColumn(name = "post_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "file_id", nullable = false)
     )
-    private List<File> files;
+    private Set<File> files;
 }

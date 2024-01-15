@@ -2,7 +2,6 @@ package com.ht.elearning.classwork;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.ht.elearning.assignment.Assignment;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.comment.Comment;
 import com.ht.elearning.config.BaseEntity;
@@ -13,6 +12,7 @@ import lombok.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 @Builder
@@ -48,16 +48,13 @@ public class Classwork extends BaseEntity {
     @OneToMany(mappedBy = "classwork", targetEntity = Comment.class, cascade = CascadeType.REMOVE)
     private List<Comment> comments;
 
-    @OneToMany(mappedBy = "classwork", targetEntity = Assignment.class, cascade = CascadeType.REMOVE)
-    private List<Assignment> assignments;
-
     @ManyToMany
     @JoinTable(
             name = "classwork_user",
             joinColumns = @JoinColumn(name = "classwork_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
     )
-    private List<User> assignees;
+    private Set<User> assignees;
 
     @ManyToMany
     @JoinTable(
@@ -65,7 +62,7 @@ public class Classwork extends BaseEntity {
             joinColumns = @JoinColumn(name = "classwork_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "file_id", nullable = false)
     )
-    private List<File> files;
+    private Set<File> files;
 
     @JsonIgnore
     @ManyToOne

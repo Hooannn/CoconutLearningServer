@@ -15,7 +15,7 @@ public class CreateClassworkCommentDto {
     @NotEmpty(message = "Body must not be empty")
     private String body;
 
-    @NotEmpty(message = "Post id must not be empty")
+    @NotEmpty(message = "Classwork id must not be empty")
     @JsonProperty("classwork_id")
     private String classworkId;
 

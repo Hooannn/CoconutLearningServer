@@ -1,6 +1,7 @@
 package com.ht.elearning.classroom;
 
 import com.ht.elearning.classroom.dtos.*;
+import com.ht.elearning.classwork.ClassworkRepository;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.invitation.InvitationRepository;
@@ -30,6 +31,7 @@ public class ClassroomService {
     private final ClassroomRepository classroomRepository;
     private final UserService userService;
     private final InvitationRepository invitationRepository;
+    private final ClassworkRepository classworkRepository;
     private final NotificationProcessor notificationProcessor;
     private final NotificationService notificationService;
 
@@ -89,7 +91,7 @@ public class ClassroomService {
 
         var savedInvitation = invitationRepository.save(invitation);
 
-        notificationProcessor.processClassroomInvitation(savedInvitation, classroom);
+        notificationProcessor.invitationDidCreate(savedInvitation, classroom);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
 
         return true;
@@ -116,7 +118,7 @@ public class ClassroomService {
 
         var savedInvitations = invitationRepository.saveAll(invitations);
 
-        notificationProcessor.processClassroomInvitations(savedInvitations, classroom);
+        notificationProcessor.invitationsDidCreate(savedInvitations, classroom);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
 
         return true;
@@ -137,7 +139,7 @@ public class ClassroomService {
                 invitationRepository::delete
         );
         var saved = classroomRepository.save(classroom);
-        notificationProcessor.processClassroomJoining(saved, user);
+        notificationProcessor.memberDidJoin(saved, user);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
         return true;
     }
@@ -166,7 +168,7 @@ public class ClassroomService {
         invitationRepository.delete(invitation);
         var saved = classroomRepository.save(classroom);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
-        notificationProcessor.processClassroomJoining(saved, user);
+        notificationProcessor.memberDidJoin(saved, user);
         notificationService.markAsDone(notificationId);
         return true;
     }
@@ -203,7 +205,7 @@ public class ClassroomService {
 
         var saved = classroomRepository.save(classroom);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.MEMBER);
-        notificationProcessor.processClassroomLeaving(saved, user);
+        notificationProcessor.memberDidLeave(saved, user);
 
         return true;
     }
@@ -253,6 +255,11 @@ public class ClassroomService {
 
     public boolean isProvider(Classroom classroom, String userId) {
         return classroom.getProviders().stream().anyMatch(u -> u.getId().equals(userId)) || classroom.getOwner().getId().equals(userId);
+    }
+
+
+    public boolean hasClasswork(String classroomId, String classworkId) {
+        return classworkRepository.existsByIdAndClassroomId(classworkId, classroomId);
     }
 
 

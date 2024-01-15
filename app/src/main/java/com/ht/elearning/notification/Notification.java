@@ -40,7 +40,7 @@ public class Notification extends BaseEntity {
     @JsonProperty("image_url")
     private String imageUrl;
 
-    @Column(name = "actions", columnDefinition = "jsonb")
+    @Column(name = "actions", columnDefinition = "text")
     @Convert(converter = ActionListConverter.class)
     private List<Action> actions;
 

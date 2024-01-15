@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -17,7 +17,7 @@ public class UpdatePostDto {
     private String body;
 
     @JsonProperty("file_ids")
-    private List<String> fileIds;
+    private Set<String> fileIds;
 
     @NotEmpty(message = "Classroom id must not be empty")
     @JsonProperty("classroom_id")

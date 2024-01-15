@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Set;
 
 @Getter
 @AllArgsConstructor
@@ -14,5 +14,5 @@ import java.util.List;
 public class RemoveManyFilesDto {
     @NotEmpty(message = "File ids must not be empty")
     @JsonProperty("file_ids")
-    private List<String> fileIds;
+    private Set<String> fileIds;
 }

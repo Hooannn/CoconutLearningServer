@@ -46,7 +46,7 @@ public class CommentService {
 
         var savedComment = commentRepository.save(comment);
 
-        notificationProcessor.processNewComment(savedComment);
+        notificationProcessor.commentDidCreate(savedComment);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.COMMENT);
         return savedComment;
     }
@@ -70,7 +70,7 @@ public class CommentService {
 
         var savedComment = commentRepository.save(comment);
 
-        notificationProcessor.processNewComment(savedComment);
+        notificationProcessor.commentDidCreate(savedComment);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.COMMENT);
         return savedComment;
     }
@@ -83,8 +83,9 @@ public class CommentService {
 
         Optional.ofNullable(updateCommentDto.getBody()).ifPresent(comment::setBody);
 
+        var savedComment = commentRepository.save(comment);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.COMMENT);
-        return commentRepository.save(comment);
+        return savedComment;
     }
 
 

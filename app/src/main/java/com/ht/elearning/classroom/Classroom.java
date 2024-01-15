@@ -8,10 +8,10 @@ import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.user.User;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.Reference;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @EqualsAndHashCode(callSuper = true)
@@ -55,7 +55,7 @@ public class Classroom extends BaseEntity {
             joinColumns = @JoinColumn(name = "classroom_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "provider_id", nullable = false)
     )
-    private List<User> providers;
+    private Set<User> providers;
 
     @ManyToMany()
     @JoinTable(
@@ -63,7 +63,7 @@ public class Classroom extends BaseEntity {
             joinColumns = @JoinColumn(name = "classroom_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
     )
-    private List<User> users;
+    private Set<User> users;
 
     @OneToMany(mappedBy = "classroom", targetEntity = Invitation.class, cascade = CascadeType.REMOVE)
     private List<Invitation> invitations;
@@ -73,8 +73,8 @@ public class Classroom extends BaseEntity {
     private List<ClassworkCategory> classworkCategories;
 
     @JsonIgnore
-    public List<User> getMembers() {
+    public Set<User> getMembers() {
         Stream<User> usersAndProvidersStream = Stream.concat(getProviders().stream(), getUsers().stream());
-        return Stream.concat(usersAndProvidersStream, Stream.of(owner)).toList();
+        return Stream.concat(usersAndProvidersStream, Stream.of(owner)).collect(Collectors.toSet());
     }
 }

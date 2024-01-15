@@ -3,6 +3,7 @@ package com.ht.elearning.post;
 import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.file.FileRepository;
+import com.ht.elearning.file.FileService;
 import com.ht.elearning.post.dtos.CreatePostDto;
 import com.ht.elearning.post.dtos.UpdatePostDto;
 import com.ht.elearning.processor.ClassroomUpdateType;
@@ -21,7 +22,7 @@ import java.util.Optional;
 public class PostService {
     private final UserService userService;
     private final ClassroomService classroomService;
-    private final FileRepository fileRepository;
+    private final FileService fileService;
     private final PostRepository postRepository;
     private final NotificationProcessor notificationProcessor;
 
@@ -37,17 +38,17 @@ public class PostService {
         if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
 
         var author = userService.findById(authorId);
-        var files = fileRepository.findAllById(createPostDto.getFileIds());
+        var files = fileService.findAllById(createPostDto.getFileIds());
         var post = Post.builder()
                 .author(author)
                 .body(createPostDto.getBody())
                 .classroom(classroom)
-                .files(files)
+                .files(new HashSet<>(files))
                 .build();
 
         var savedPost = postRepository.save(post);
 
-        notificationProcessor.processNewPost(savedPost);
+        notificationProcessor.postDidCreate(savedPost);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.POST);
         return savedPost;
     }
@@ -58,12 +59,12 @@ public class PostService {
         var post = postRepository.findByIdAndAuthorId(postId, authorId).orElseThrow(() -> new HttpException("Post not found", HttpStatus.BAD_REQUEST));
         Optional.ofNullable(updatePostDto.getBody()).ifPresent(post::setBody);
         Optional.ofNullable(updatePostDto.getFileIds()).ifPresent(fileIds -> {
-            var files = fileRepository.findAllById(fileIds);
-            post.setFiles(files);
+            var files = fileService.findAllById(fileIds);
+            post.setFiles(new HashSet<>(files));
         });
-
+        var savedPost = postRepository.save(post);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.POST);
-        return postRepository.save(post);
+        return savedPost;
     }
 
 

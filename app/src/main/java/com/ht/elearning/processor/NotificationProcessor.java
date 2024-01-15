@@ -2,6 +2,7 @@ package com.ht.elearning.processor;
 
 import com.corundumstudio.socketio.SocketIOServer;
 import com.google.firebase.messaging.Notification;
+import com.ht.elearning.assignment.Assignment;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
@@ -27,8 +28,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -38,14 +39,13 @@ public class NotificationProcessor {
     private final MailService mailService;
     private final SocketIOServer socketIOServer;
     private final UserRepository userRepository;
-    private final CommentRepository commentRepository;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
     @Value("${client.web.url}")
     private String clientWebUrl;
 
     @Async
-    public void processClassroomInvitation(Invitation invitation, Classroom classroom) {
+    public void invitationDidCreate(Invitation invitation, Classroom classroom) {
         var urlString = clientWebUrl + "/classroom/invitation?invite_code=" + classroom.getInviteCode();
         URL acceptUrl = null;
         var user = userRepository.findByEmail(invitation.getEmail()).orElse(null);
@@ -110,7 +110,7 @@ public class NotificationProcessor {
     }
 
     @Async
-    public void processClassroomInvitations(List<Invitation> invitations, Classroom classroom) {
+    public void invitationsDidCreate(List<Invitation> invitations, Classroom classroom) {
         var urlString = clientWebUrl + "/classroom/invitation?invite_code=" + classroom.getInviteCode();
         URL acceptUrl = null;
         var users = userRepository.findAllByEmailIn(invitations.stream().map(Invitation::getEmail).toList());
@@ -165,8 +165,8 @@ public class NotificationProcessor {
     }
 
     @Async
-    public void processClassroomJoining(Classroom classroom, User user) {
-        var notification = notificationService.createJoiningClassroomNotification(user, classroom);
+    public void memberDidJoin(Classroom classroom, User user) {
+        var notification = notificationService.createMemberDidJoinNotification(user, classroom);
         var target = classroom.getOwner().getId();
         HashMap<String, String> eventData = new HashMap<>();
         eventData.put("notification_id", notification.getId());
@@ -195,8 +195,8 @@ public class NotificationProcessor {
     }
 
     @Async
-    public void processClassroomLeaving(Classroom classroom, User user) {
-        var notification = notificationService.createLeavingClassroomNotification(user, classroom);
+    public void memberDidLeave(Classroom classroom, User user) {
+        var notification = notificationService.createMemberDidLeaveNotification(user, classroom);
         var target = classroom.getOwner().getId();
         HashMap<String, String> eventData = new HashMap<>();
         eventData.put("notification_id", notification.getId());
@@ -225,12 +225,12 @@ public class NotificationProcessor {
     }
 
     @Async
-    public void processNewPost(Post savedPost) {
+    public void postDidCreate(Post savedPost) {
         var classroom = savedPost.getClassroom();
         var members = classroom.getMembers().stream().filter(m -> !m.getId().equals(savedPost.getAuthor().getId())).toList();
         var memberIds = members.stream().map(User::getId).toList();
 
-        var notifications = notificationService.createNewPostNotifications(members, savedPost);
+        var notifications = notificationService.createPostDidCreateNotifications(members, savedPost);
         notifySocket(memberIds, "notification:created", new HashMap<>());
 
         var notification = notifications.get(0);
@@ -259,14 +259,14 @@ public class NotificationProcessor {
 
 
     @Async
-    public void processNewComment(Comment savedComment) {
+    public void commentDidCreate(Comment savedComment) {
         var recipient = savedComment.getPost() == null ?
                 savedComment.getClasswork().getAuthor() :
                 savedComment.getPost().getAuthor();
 
         if (recipient.getId().equals(savedComment.getAuthor().getId())) return;
 
-        var notifications = notificationService.createNewCommentNotifications(List.of(recipient), savedComment);
+        var notifications = notificationService.createCommentDidCreateNotifications(List.of(recipient), savedComment);
 
         notifySocket(recipient.getId(), "notification:created", new HashMap<>());
 
@@ -296,20 +296,20 @@ public class NotificationProcessor {
 
 
     @Async
-    public void processNewClasswork(Classwork savedClasswork) {
+    public void classworkDidCreate(Classwork savedClasswork) {
         var classroom = savedClasswork.getClassroom();
         var author = savedClasswork.getAuthor();
 
         //Create notification for assignees and other providers
         CompletableFuture<Void> createNotificationsFuture = CompletableFuture.runAsync(() -> {
-            List<User> providers = classroom.getProviders();
-            List<User> assignees = savedClasswork.getAssignees();
+            Set<User> providers = classroom.getProviders();
+            Set<User> assignees = savedClasswork.getAssignees();
             List<User> recipients = Stream.concat(providers.stream(), assignees.stream())
                     .filter(r -> !r.getId().equals(author.getId()))
                     .toList();
 
 
-            var notifications = notificationService.createNewClassworkNotifications(recipients, savedClasswork);
+            var notifications = notificationService.createClassworkDidCreateNotifications(recipients, savedClasswork);
             var notification = notifications.get(0);
             var recipientIds = recipients.stream().map(User::getId).toList();
             notifySocket(recipientIds, "notification:created", new HashMap<>());
@@ -353,6 +353,34 @@ public class NotificationProcessor {
         });
 
         CompletableFuture.allOf(createNotificationsFuture, sendMailFuture).join();
+    }
+
+
+    @Async
+    public void assignmentDidCreate(Assignment savedAssignment) {
+        var recipient = savedAssignment.getClasswork().getAuthor();
+        var notification = notificationService.createAssignmentDidCreateNotification(recipient, savedAssignment);
+        notifySocket(recipient.getId(), "notification:created", new HashMap<>());
+        try {
+            var batchResponse = pushNotificationService.push(
+                    recipient.getId(),
+                    Notification.builder()
+                            .setBody(notification.getContent())
+                            .setTitle(notification.getTitle())
+                            .setImage(notification.getImageUrl())
+                            .build(),
+                    new HashMap<>()
+            );
+            logger.debug(
+                    "Handle[processNewComment] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+            );
+        } catch (Exception e) {
+            logger.warn(
+                    "Handle[processNewComment] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    recipient.getId(), notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+            );
+        }
     }
 
 
