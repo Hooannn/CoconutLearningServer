@@ -49,7 +49,7 @@ public class Classroom extends BaseEntity {
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    @ManyToMany()
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "classroom_provider",
             joinColumns = @JoinColumn(name = "classroom_id", nullable = false),
@@ -57,7 +57,7 @@ public class Classroom extends BaseEntity {
     )
     private Set<User> providers;
 
-    @ManyToMany()
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "classroom_user",
             joinColumns = @JoinColumn(name = "classroom_id", nullable = false),

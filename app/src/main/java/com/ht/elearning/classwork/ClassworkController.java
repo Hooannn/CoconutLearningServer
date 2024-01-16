@@ -1,5 +1,6 @@
 package com.ht.elearning.classwork;
 
+import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.classwork.dtos.CreateClassworkCategoryDto;
 import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkCategoryDto;
@@ -23,6 +24,7 @@ import java.util.List;
 public class ClassworkController {
     private final ClassworkCategoryService classworkCategoryService;
     private final ClassworkService classworkService;
+    private final ClassroomService classroomService;
 
 
     @GetMapping("/{classroomId}/categories")
@@ -94,7 +96,7 @@ public class ClassworkController {
 
 
     @GetMapping("/{classroomId}")
-    public ResponseEntity<Response<List<Classwork>>> findByClassroomId(
+    public ResponseEntity<Response<List<?>>> findByClassroomId(
             @PathVariable String classroomId
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -111,12 +113,12 @@ public class ClassworkController {
 
 
     @GetMapping("/{classroomId}/{classworkId}")
-    public ResponseEntity<Response<Classwork>> find(
+    public ResponseEntity<Response<?>> findByClassroomIdAndClassworkId(
             @PathVariable String classroomId,
             @PathVariable String classworkId
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classwork = classworkService.find(classworkId, classroomId, authentication.getPrincipal().toString());
+        var classwork = classworkService.findByClassroomIdAndClassworkId(classroomId, classworkId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

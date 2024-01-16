@@ -29,7 +29,7 @@ public class AssignmentController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created successfully",
+                        "Submitted successfully",
                         true,
                         assignment
                 )
@@ -62,7 +62,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        "Submitted successfully",
                         true,
                         assignment
                 )

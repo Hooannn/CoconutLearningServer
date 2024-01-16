@@ -26,6 +26,7 @@ public class MailService {
         message.setTo(to);
         message.setSubject(subject);
         message.setText(text);
+        message.setFrom("support@coconut.online");
         javaMailSender.send(message);
     }
 
@@ -37,6 +38,7 @@ public class MailService {
         context.setVariable("code", signature);
         String htmlContent = templateEngine.process("account-verification", context);
 
+        helper.setFrom("support@coconut.online");
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -53,6 +55,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("reset-password-verification", context);
 
+        helper.setFrom("support@coconut.online");
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -67,6 +70,7 @@ public class MailService {
         Context context = new Context();
         String htmlContent = templateEngine.process("welcome", context);
 
+        helper.setFrom("support@coconut.online");
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -83,6 +87,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("classroom-invitation", context);
 
+        helper.setFrom("support@coconut.online");
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -100,6 +105,7 @@ public class MailService {
                 Context context = new Context();
                 context.setVariable("acceptUrl", acceptUrl);
                 String htmlContent = templateEngine.process("classroom-invitation", context);
+                helper.setFrom("support@coconut.online");
                 helper.setTo(email);
                 helper.setSubject(subject);
                 helper.setText(htmlContent, true);
@@ -123,6 +129,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("new-classwork", context);
 
+        helper.setFrom("support@coconut.online");
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);

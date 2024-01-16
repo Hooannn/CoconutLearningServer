@@ -9,6 +9,7 @@ import com.ht.elearning.post.dtos.UpdatePostDto;
 import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
 import com.ht.elearning.user.UserService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

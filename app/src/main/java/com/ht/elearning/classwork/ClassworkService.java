@@ -3,6 +3,7 @@ package com.ht.elearning.classwork;
 import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkDto;
+import com.ht.elearning.classwork.projections.StudentClassworkView;
 import com.ht.elearning.config.HttpException;
 import com.ht.elearning.file.FileRepository;
 import com.ht.elearning.file.FileService;
@@ -29,13 +30,13 @@ public class ClassworkService {
     private final UserService userService;
 
 
-    public List<Classwork> findAllByClassroomId(String classroomId, String userId) {
+    public List<?> findAllByClassroomId(String classroomId, String userId) {
         var isProvider = classroomService.isProvider(classroomId, userId);
         if (isProvider) {
             return classworkRepository.findAllByClassroomId(classroomId);
         }
 
-        return classworkRepository.findAllByClassroomIdAndAssigneesId(classroomId, userId);
+        return classworkRepository.findAllByClassroomIdAndAssigneesId(classroomId, userId, StudentClassworkView.class);
     }
 
 
@@ -132,13 +133,22 @@ public class ClassworkService {
     }
 
 
-    public Classwork find(String classworkId, String classroomId, String userId) {
+    public StudentClassworkView findByIdForStudent(String id) {
+        return classworkRepository.findById(id, StudentClassworkView.class).orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
+    }
+
+
+    public Object findByClassroomIdAndClassworkId(String classroomId, String classworkId, String userId) {
         if (!classroomService.hasClasswork(classroomId, classworkId))
             throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
 
-        var isMember = classroomService.isMember(classroomId, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
-        return findById(classworkId);
+        var classroom = classroomService.find(classroomId, userId);
+
+        var isProvider = classroomService.isProvider(classroom, userId);
+
+        if (isProvider) return findById(classworkId);
+
+        return findByIdForStudent(classworkId);
     }
 
 
