@@ -24,19 +24,19 @@ public class AppProcessor {
         var email = user.getEmail();
         var signature = Helper.generateRandomSecret(12);
         redisService.setValue("account_signature:" + email, signature, 600);
-        mailService.sendAccountVerificationMail(email, "ELearning - Account Verification", signature);
+        mailService.sendAccountVerificationMail(email, "Coconut - Account Verification", signature);
     }
 
     @Async
     public void userDidVerify(User user) throws MessagingException {
         var email = user.getEmail();
-        mailService.sendWelcomeMail(email, "ELearning - Welcome");
+        mailService.sendWelcomeMail(email, "Coconut - Welcome");
     }
 
     @Async
     public void userDidForgetPassword(String email) throws MessagingException {
         var signature = Helper.generateRandomSecret(12);
         redisService.setValue("reset_password_signature:" + email, signature, 600);
-        mailService.sendResetPasswordVerificationMail(email, "ELearning - Reset password", signature);
+        mailService.sendResetPasswordVerificationMail(email, "Coconut - Reset password", signature);
     }
 }

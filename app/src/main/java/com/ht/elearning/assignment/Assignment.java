@@ -10,6 +10,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
@@ -53,10 +54,12 @@ public class Assignment extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    private int score;
-
     @Column(columnDefinition = "BOOLEAN DEFAULT false")
     private boolean submitted;
+
+    @OneToOne
+    @JoinColumn(name = "grade_id")
+    private Grade grade;
 }
 
 @Getter

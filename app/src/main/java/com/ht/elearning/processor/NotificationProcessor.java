@@ -3,6 +3,8 @@ package com.ht.elearning.processor;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.google.firebase.messaging.Notification;
 import com.ht.elearning.assignment.Assignment;
+import com.ht.elearning.assignment.AssignmentSchedule;
+import com.ht.elearning.assignment.AssignmentScheduleRepository;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
@@ -42,6 +44,7 @@ public class NotificationProcessor {
     private final SocketIOServer socketIOServer;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AssignmentScheduleRepository assignmentScheduleRepository;
     private final PushNotificationService pushNotificationService;
     @Value("${client.web.url}")
     private String clientWebUrl;
@@ -87,7 +90,7 @@ public class NotificationProcessor {
 
             URL finalAcceptUrl = acceptUrl;
             CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
-                String mailSubject = "ELearning - Classroom invitation";
+                String mailSubject = "Coconut - Classroom invitation";
                 try {
                     mailService.sendClassroomInvitationMail(invitation.getEmail(), mailSubject, finalAcceptUrl.toString());
                 } catch (MessagingException e) {
@@ -151,7 +154,7 @@ public class NotificationProcessor {
             });
             URL finalAcceptUrl = acceptUrl;
             CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
-                String mailSubject = "ELearning - Classroom invitation";
+                String mailSubject = "Coconut - Classroom invitation";
                 mailService.sendClassroomInvitationMails(emailsToSend, mailSubject, finalAcceptUrl.toString());
             });
 
@@ -354,7 +357,27 @@ public class NotificationProcessor {
             });
         });
 
-        CompletableFuture.allOf(createNotificationsFuture, sendMailFuture).join();
+        //Create schedule for reminder
+        CompletableFuture<Void> createSchedulesFuture = CompletableFuture.runAsync(() -> {
+            var deadline = savedClasswork.getDeadline();
+            var assignees = savedClasswork.getAssignees();
+            var schedules = assignees.stream().map(assignee -> AssignmentSchedule.builder()
+                    .scheduledTime(new Date(deadline.getTime() - 24 * 60 * 60 * 1000))
+                    .user(assignee)
+                    .classwork(savedClasswork)
+                    .build()
+            ).toList();
+            assignmentScheduleRepository.saveAll(schedules);
+        });
+
+        CompletableFuture.allOf(createNotificationsFuture, sendMailFuture, createSchedulesFuture).join();
+    }
+
+
+    @Async
+    public void classworkDidUpdate(Classwork savedClasswork) {
+        var deadline = savedClasswork.getDeadline();
+        assignmentScheduleRepository.updateScheduledTimeByClassworkId(new Date(deadline.getTime() - 24 * 60 * 60 * 1000), savedClasswork.getId());
     }
 
 
@@ -393,6 +416,34 @@ public class NotificationProcessor {
         eventData.put("type", String.valueOf(updateType));
         eventData.put("classroom_id", classroom.getId());
         notifySocket(memberIds, "classroom:updated", eventData);
+    }
+
+
+    @Async
+    public void gradeDidCreate(Assignment savedAssignment) {
+        var student = savedAssignment.getAuthor();
+        var notification = notificationService.createGradeDidCreateNotification(student, savedAssignment);
+        notifySocket(student.getId(), "notification:created", new HashMap<>());
+        try {
+            var batchResponse = pushNotificationService.push(
+                    student.getId(),
+                    Notification.builder()
+                            .setBody(notification.getContent())
+                            .setTitle(notification.getTitle())
+                            .setImage(notification.getImageUrl())
+                            .build(),
+                    new HashMap<>()
+            );
+            logger.debug(
+                    "Handle[gradeDidCreate] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+            );
+        } catch (Exception e) {
+            logger.warn(
+                    "Handle[gradeDidCreate] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    student.getId(), notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+            );
+        }
     }
 
 

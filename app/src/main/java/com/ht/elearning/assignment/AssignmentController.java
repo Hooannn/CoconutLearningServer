@@ -1,7 +1,9 @@
 package com.ht.elearning.assignment;
 
 import com.ht.elearning.assignment.dtos.CreateAssignmentDto;
+import com.ht.elearning.assignment.dtos.CreateGradeDto;
 import com.ht.elearning.assignment.dtos.UpdateAssignmentDto;
+import com.ht.elearning.assignment.dtos.UpdateGradeDto;
 import com.ht.elearning.config.Response;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,55 @@ public class AssignmentController {
                         "Submitted successfully",
                         true,
                         assignment
+                )
+        );
+    }
+
+    @PostMapping("/{classroomId}/{classworkId}/{studentId}/grade")
+    public ResponseEntity<Response<Grade>> createGrade(@PathVariable String classworkId,
+                                                       @PathVariable String classroomId,
+                                                       @PathVariable String studentId,
+                                                       @Valid @RequestBody CreateGradeDto createGradeDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var grade = assignmentService.createGrade(createGradeDto, classworkId, classroomId, studentId, authentication.getPrincipal().toString());
+
+        return ResponseEntity.created(null).body(
+                new Response<>(
+                        HttpStatus.CREATED.value(),
+                        "Graded successfully",
+                        true,
+                        grade
+                )
+        );
+    }
+
+    @PutMapping("/grade/{gradeId}")
+    public ResponseEntity<Response<Grade>> updateGrade(@PathVariable String gradeId,
+                                                       @Valid @RequestBody UpdateGradeDto updateGradeDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var grade = assignmentService.updateGrade(updateGradeDto, gradeId, authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Updated successfully",
+                        true,
+                        grade
+                )
+        );
+    }
+
+    @DeleteMapping("/grade/{gradeId}")
+    public ResponseEntity<Response<?>> deleteGrade(@PathVariable String gradeId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var grade = assignmentService.deleteGrade(gradeId, authentication.getPrincipal().toString());
+
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        "Deleted",
+                        grade,
+                        null
                 )
         );
     }

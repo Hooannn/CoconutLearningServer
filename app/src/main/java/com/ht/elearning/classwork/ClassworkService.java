@@ -107,7 +107,10 @@ public class ClassworkService {
             classwork.setAssignees(assignees);
         });
         var savedClasswork = classworkRepository.save(classwork);
+
+        notificationProcessor.classworkDidUpdate(savedClasswork);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
+
         return savedClasswork;
     }
 

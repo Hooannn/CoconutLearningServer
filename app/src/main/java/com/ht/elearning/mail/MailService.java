@@ -4,6 +4,7 @@ import com.ht.elearning.classwork.Classwork;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -19,6 +20,9 @@ import java.util.Objects;
 public class MailService {
     private final JavaMailSender javaMailSender;
     private final TemplateEngine templateEngine;
+
+    @Value("${client.web.url}")
+    private String clientWebUrl;
 
 
     public void sendEmail(String to, String subject, String text) {
@@ -128,6 +132,25 @@ public class MailService {
         context.setVariable("classworkDescription", savedClasswork.getDescription());
 
         String htmlContent = templateEngine.process("new-classwork", context);
+
+        helper.setFrom("support@coconut.online");
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true);
+
+        javaMailSender.send(mimeMessage);
+    }
+
+    public void sendClassworkReminderMail(String to, String subject, Classwork classwork) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        Context context = new Context();
+        context.setVariable("className", classwork.getClassroom().getName());
+        context.setVariable("classworkTitle", classwork.getTitle());
+        context.setVariable("classworkDeadline", classwork.getDeadline());
+        context.setVariable("classworkLink", clientWebUrl + "/classroom/" + classwork.getClassroom().getId() + "/classwork/" + classwork.getId());
+
+        String htmlContent = templateEngine.process("classwork-reminder", context);
 
         helper.setFrom("support@coconut.online");
         helper.setTo(to);

@@ -1,6 +1,7 @@
 package com.ht.elearning.notification;
 
 import com.ht.elearning.assignment.Assignment;
+import com.ht.elearning.assignment.AssignmentSchedule;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
@@ -10,10 +11,12 @@ import com.ht.elearning.invitation.InvitationType;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.datetime.DateFormatter;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -188,6 +191,24 @@ public class NotificationService {
     }
 
 
+    public Notification createGradeDidCreateNotification(User recipient, Assignment savedAssignment) {
+        var classwork = savedAssignment.getClasswork();
+        var classroom = classwork.getClassroom();
+        var author = savedAssignment.getGrade().getGradedBy();
+        var urlString = "/classroom/" + classroom.getId() + "/classwork/" + classwork.getId();
+
+        Notification notification = Notification.builder()
+                .title("Classroom: '" + classroom.getName() + "'")
+                .content(author.getFullName() + " graded your assignment")
+                .redirectUrl(urlString)
+                .recipient(recipient)
+                .imageUrl(author.getAvatarUrl())
+                .build();
+
+        return notificationRepository.save(notification);
+    }
+
+
     public boolean deleteMyNotifications(String userId) {
         notificationRepository.deleteAllByRecipientId(userId);
         return true;
@@ -216,5 +237,25 @@ public class NotificationService {
             notification.setActions(null);
             notificationRepository.save(notification);
         }
+    }
+
+
+    public Notification createAssignmentReminderNotification(User recipient, AssignmentSchedule schedule) {
+        var classwork = schedule.getClasswork();
+        var classroom = classwork.getClassroom();
+        var author = classwork.getAuthor();
+        var urlString = "/classroom/" + classroom.getId() + "/classwork/" + classwork.getId();
+
+        DateFormatter dateFormatter = new DateFormatter("dd/MM/yyyy HH:mm");
+        var deadline = dateFormatter.print(classwork.getDeadline(), Locale.ENGLISH);
+        Notification notification = Notification.builder()
+                .title("Classroom: '" + classroom.getName() + "'")
+                .content("You have an assignment due today.\n" + "\"" + classwork.getTitle() + "\"" + " - " + deadline)
+                .redirectUrl(urlString)
+                .recipient(recipient)
+                .imageUrl(author.getAvatarUrl())
+                .build();
+
+        return notificationRepository.save(notification);
     }
 }

@@ -1,7 +1,9 @@
 package com.ht.elearning.assignment;
 
 import com.ht.elearning.assignment.dtos.CreateAssignmentDto;
+import com.ht.elearning.assignment.dtos.CreateGradeDto;
 import com.ht.elearning.assignment.dtos.UpdateAssignmentDto;
+import com.ht.elearning.assignment.dtos.UpdateGradeDto;
 import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.classwork.ClassworkService;
 import com.ht.elearning.config.HttpException;
@@ -21,6 +23,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
+    private final GradeRepository gradeRepository;
     private final ClassroomService classroomService;
     private final NotificationProcessor notificationProcessor;
     private final ClassworkService classworkService;
@@ -141,5 +144,60 @@ public class AssignmentService {
             throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
 
         return assignmentRepository.findAllByClassworkId(classworkId);
+    }
+
+    @Transactional
+    public Grade createGrade(CreateGradeDto createGradeDto, String classworkId, String classroomId, String studentId, String gradedBy) {
+        var isProvider = classroomService.isProvider(classroomId, gradedBy);
+
+        if (!isProvider) throw new HttpException("No permission", HttpStatus.FORBIDDEN);
+
+        if (!classroomService.hasClasswork(classroomId, classworkId))
+            throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
+
+        var assignment = findByClassworkIdAndAuthorId(classworkId, studentId);
+
+        if (assignment.getGrade() != null)
+            throw new HttpException("Grade already exists", HttpStatus.BAD_REQUEST);
+
+        var maxScore = assignment.getClasswork().getScore();
+
+        if (createGradeDto.getGrade() <= 0 || createGradeDto.getGrade() >= maxScore)
+            throw new HttpException("Grade must be between 0 and " + maxScore, HttpStatus.BAD_REQUEST);
+
+        Grade grade = Grade.builder()
+                .grade(createGradeDto.getGrade())
+                .gradedBy(userService.findById(gradedBy))
+                .comment(createGradeDto.getComment())
+                .build();
+
+        gradeRepository.save(grade);
+
+        assignment.setGrade(grade);
+
+        var savedAssignment = assignmentRepository.save(assignment);
+
+        notificationProcessor.gradeDidCreate(savedAssignment);
+
+        return savedAssignment.getGrade();
+    }
+
+    public Grade updateGrade(UpdateGradeDto updateGradeDto, String gradeId, String gradedBy) {
+        var grade = gradeRepository.findByIdAndGradedById(gradeId, gradedBy)
+                .orElseThrow(() -> new HttpException("Grade not found", HttpStatus.BAD_REQUEST));
+
+        Optional.of(updateGradeDto.getGrade()).ifPresent(grade::setGrade);
+        Optional.ofNullable(updateGradeDto.getComment()).ifPresent(grade::setComment);
+
+        return gradeRepository.save(grade);
+    }
+
+    public boolean deleteGrade(String gradeId, String gradedBy) {
+        var grade = gradeRepository.findByIdAndGradedById(gradeId, gradedBy)
+                .orElseThrow(() -> new HttpException("Grade not found", HttpStatus.BAD_REQUEST));
+
+        gradeRepository.delete(grade);
+
+        return true;
     }
 }
