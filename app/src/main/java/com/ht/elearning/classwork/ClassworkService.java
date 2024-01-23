@@ -5,7 +5,6 @@ import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkDto;
 import com.ht.elearning.classwork.projections.StudentClassworkView;
 import com.ht.elearning.config.HttpException;
-import com.ht.elearning.file.FileRepository;
 import com.ht.elearning.file.FileService;
 import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
@@ -14,9 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,6 +53,10 @@ public class ClassworkService {
                 .collect(Collectors.toSet());
 
         if (assignees.isEmpty()) throw new HttpException("Assignees must be specified", HttpStatus.BAD_REQUEST);
+
+        if (createClassworkDto.getDeadline() != null && createClassworkDto.getDeadline().before(new Date()))
+            throw new HttpException("Deadline must be in the future", HttpStatus.BAD_REQUEST);
+
         var author = userService.findById(userId);
         var classwork = Classwork.builder()
                 .assignees(assignees)
@@ -84,11 +89,16 @@ public class ClassworkService {
         if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
 
         var classwork = classworkRepository.findById(classworkId).orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
-
+        AtomicBoolean isDeadlineChanged = new AtomicBoolean(false);
         Optional.ofNullable(updateClassworkDto.getTitle()).ifPresent(classwork::setTitle);
         Optional.ofNullable(updateClassworkDto.getDescription()).ifPresent(classwork::setDescription);
         Optional.of(updateClassworkDto.getScore()).ifPresent(classwork::setScore);
-        Optional.ofNullable(updateClassworkDto.getDeadline()).ifPresent(classwork::setDeadline);
+        Optional.ofNullable(updateClassworkDto.getDeadline()).ifPresent(deadline -> {
+            if (deadline.before(new Date()))
+                throw new HttpException("Deadline must be in the future", HttpStatus.BAD_REQUEST);
+            isDeadlineChanged.set(true);
+            classwork.setDeadline(deadline);
+        });
         Optional.ofNullable(updateClassworkDto.getCategoryId()).ifPresent(categoryId -> {
             var category = classworkCategoryService.findByIdAndClassroomId(updateClassworkDto.getCategoryId(), classroomId);
             classwork.setCategory(category);
@@ -107,8 +117,9 @@ public class ClassworkService {
             classwork.setAssignees(assignees);
         });
         var savedClasswork = classworkRepository.save(classwork);
-
-        notificationProcessor.classworkDidUpdate(savedClasswork);
+        if (isDeadlineChanged.get()) {
+            notificationProcessor.classworkDeadlineDidUpdate(savedClasswork);
+        }
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
 
         return savedClasswork;

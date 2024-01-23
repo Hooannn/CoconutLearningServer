@@ -5,6 +5,7 @@ import com.google.firebase.messaging.Notification;
 import com.ht.elearning.assignment.Assignment;
 import com.ht.elearning.assignment.AssignmentSchedule;
 import com.ht.elearning.assignment.AssignmentScheduleRepository;
+import com.ht.elearning.assignment.AssignmentScheduleService;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
@@ -16,6 +17,7 @@ import com.ht.elearning.post.Post;
 import com.ht.elearning.push_notification.PushNotificationService;
 import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserRepository;
+import com.ht.elearning.utils.Helper;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -43,8 +45,8 @@ public class NotificationProcessor {
     private final MailService mailService;
     private final SocketIOServer socketIOServer;
     private final UserRepository userRepository;
+    private final AssignmentScheduleService assignmentScheduleService;
     private final NotificationService notificationService;
-    private final AssignmentScheduleRepository assignmentScheduleRepository;
     private final PushNotificationService pushNotificationService;
     @Value("${client.web.url}")
     private String clientWebUrl;
@@ -360,14 +362,20 @@ public class NotificationProcessor {
         //Create schedule for reminder
         CompletableFuture<Void> createSchedulesFuture = CompletableFuture.runAsync(() -> {
             var deadline = savedClasswork.getDeadline();
+            if (deadline == null) return;
             var assignees = savedClasswork.getAssignees();
+            Date scheduledTime = new Date(deadline.getTime() - 24 * 60 * 60 * 1000);
+
+            // Don't create schedule if scheduled time is today
+            if (Helper.isSameDay(scheduledTime, new Date())) return;
+
             var schedules = assignees.stream().map(assignee -> AssignmentSchedule.builder()
-                    .scheduledTime(new Date(deadline.getTime() - 24 * 60 * 60 * 1000))
+                    .scheduledTime(scheduledTime)
                     .user(assignee)
                     .classwork(savedClasswork)
                     .build()
             ).toList();
-            assignmentScheduleRepository.saveAll(schedules);
+            assignmentScheduleService.saveAll(schedules);
         });
 
         CompletableFuture.allOf(createNotificationsFuture, sendMailFuture, createSchedulesFuture).join();
@@ -375,9 +383,18 @@ public class NotificationProcessor {
 
 
     @Async
-    public void classworkDidUpdate(Classwork savedClasswork) {
+    public void classworkDeadlineDidUpdate(Classwork savedClasswork) {
         var deadline = savedClasswork.getDeadline();
-        assignmentScheduleRepository.updateScheduledTimeByClassworkId(new Date(deadline.getTime() - 24 * 60 * 60 * 1000), savedClasswork.getId());
+        if (deadline == null) {
+            assignmentScheduleService.updateRemindedByClassworkId(true, savedClasswork.getId());
+            return;
+        }
+        Date scheduledTime = new Date(deadline.getTime() - 24 * 60 * 60 * 1000);
+
+        assignmentScheduleService.updateScheduledTimeByClassworkId(scheduledTime, savedClasswork.getId());
+
+        var schedules = assignmentScheduleService.findUnremindedSchedulesByClassworkIdForToday(savedClasswork.getId());
+        assignmentScheduleService.remind(schedules, logger);
     }
 
 

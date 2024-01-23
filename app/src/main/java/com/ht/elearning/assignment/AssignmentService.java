@@ -69,12 +69,17 @@ public class AssignmentService {
 
         if (isNew) notificationProcessor.assignmentDidCreate(savedAssignment);
 
+        notificationProcessor.classroomDidUpdate(classwork.getClassroom(), ClassroomUpdateType.ASSIGNMENT);
+
         return savedAssignment;
     }
 
     public Assignment update(UpdateAssignmentDto updateAssignmentDto, String classworkId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
         var assignment = findByClassworkIdAndAuthorId(classworkId, userId);
+
+        if (assignment.getGrade() != null)
+            throw new HttpException("Assignment is graded", HttpStatus.BAD_REQUEST);
 
         if (assignment.getClasswork().getDeadline().before(new Date()))
             throw new HttpException("Deadline is passed", HttpStatus.BAD_REQUEST);
@@ -94,6 +99,10 @@ public class AssignmentService {
         var classroom = classroomService.findById(classroomId);
         var assignment = assignmentRepository.findByClassworkIdAndAuthorId(classworkId, userId)
                 .orElseThrow(() -> new HttpException("Assignment not found", HttpStatus.BAD_REQUEST));
+
+        if (assignment.getGrade() != null)
+            throw new HttpException("Assignment is graded", HttpStatus.BAD_REQUEST);
+
         assignment.setSubmitted(isSubmitted);
         var savedAssignment = assignmentRepository.save(assignment);
 
@@ -162,7 +171,7 @@ public class AssignmentService {
 
         var maxScore = assignment.getClasswork().getScore();
 
-        if (createGradeDto.getGrade() <= 0 || createGradeDto.getGrade() >= maxScore)
+        if (createGradeDto.getGrade() < 0 || createGradeDto.getGrade() > maxScore)
             throw new HttpException("Grade must be between 0 and " + maxScore, HttpStatus.BAD_REQUEST);
 
         Grade grade = Grade.builder()

@@ -25,6 +25,7 @@ public class CreateClassworkDto {
     @NotNull(message = "Classwork type must not be null")
     private ClassworkType type;
 
+    @NotNull(message = "Score must not be null")
     private int score;
 
     private Date deadline;
