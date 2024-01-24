@@ -103,6 +103,9 @@ public class AssignmentService {
         if (assignment.getGrade() != null)
             throw new HttpException("Assignment is graded", HttpStatus.BAD_REQUEST);
 
+        if (assignment.getClasswork().getDeadline().before(new Date()))
+            throw new HttpException("Deadline is passed", HttpStatus.BAD_REQUEST);
+
         assignment.setSubmitted(isSubmitted);
         var savedAssignment = assignmentRepository.save(assignment);
 

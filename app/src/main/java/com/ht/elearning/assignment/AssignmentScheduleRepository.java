@@ -17,13 +17,13 @@ public interface AssignmentScheduleRepository extends JpaRepository<AssignmentSc
     List<AssignmentSchedule> findAllByClassworkIdAndRemindedIsFalse(String classworkId);
 
     @Modifying
-    @Query(value = "update assignment_schedules s set s.scheduledTime = ?1, s.reminded = false where s.classwork_id = ?2", nativeQuery = true)
+    @Query(value = "update assignment_schedules set scheduled_time = ?1, reminded = false where classwork_id = ?2", nativeQuery = true)
     void updateScheduledTimeByClassworkId(Date scheduledTime, String classworkId);
 
     void deleteAllByScheduledTimeBeforeOrRemindedIsTrue(Date scheduledTime);
 
     @Modifying
-    @Query(value = "update assignment_schedules s set s.reminded = ?1 where s.classwork_id = ?2", nativeQuery = true)
+    @Query(value = "update assignment_schedules set reminded = ?1 where classwork_id = ?2", nativeQuery = true)
     void updateRemindedByClassworkId(Boolean reminded, String classworkId);
 
     void deleteAllByClassworkId(String classworkId);

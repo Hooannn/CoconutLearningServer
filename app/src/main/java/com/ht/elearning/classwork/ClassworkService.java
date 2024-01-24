@@ -9,6 +9,7 @@ import com.ht.elearning.file.FileService;
 import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
 import com.ht.elearning.user.UserService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -93,15 +94,20 @@ public class ClassworkService {
         Optional.ofNullable(updateClassworkDto.getTitle()).ifPresent(classwork::setTitle);
         Optional.ofNullable(updateClassworkDto.getDescription()).ifPresent(classwork::setDescription);
         Optional.of(updateClassworkDto.getScore()).ifPresent(classwork::setScore);
+
+        //TODO: check if user want to remove deadline or not
         Optional.ofNullable(updateClassworkDto.getDeadline()).ifPresent(deadline -> {
             if (deadline.before(new Date()))
                 throw new HttpException("Deadline must be in the future", HttpStatus.BAD_REQUEST);
             isDeadlineChanged.set(true);
             classwork.setDeadline(deadline);
         });
-        Optional.ofNullable(updateClassworkDto.getCategoryId()).ifPresent(categoryId -> {
+
+        Optional.ofNullable(updateClassworkDto.getCategoryId()).ifPresentOrElse(categoryId -> {
             var category = classworkCategoryService.findByIdAndClassroomId(updateClassworkDto.getCategoryId(), classroomId);
             classwork.setCategory(category);
+        }, () -> {
+            classwork.setCategory(null);
         });
 
         Optional.ofNullable(updateClassworkDto.getFileIds()).ifPresent(fileIds -> {
@@ -109,6 +115,7 @@ public class ClassworkService {
             classwork.setFiles(new HashSet<>(files));
         });
 
+        //TODO: handle notifications, assignment_schedules for changed assignees
         Optional.ofNullable(updateClassworkDto.getAssigneeIds()).ifPresent(assigneeIds -> {
             var assignees = classroom.getUsers().stream()
                     .filter(user -> updateClassworkDto.getAssigneeIds().contains(user.getId()))
@@ -116,10 +123,13 @@ public class ClassworkService {
             if (assignees.isEmpty()) throw new HttpException("Assignees must be specified", HttpStatus.BAD_REQUEST);
             classwork.setAssignees(assignees);
         });
+
         var savedClasswork = classworkRepository.save(classwork);
+
         if (isDeadlineChanged.get()) {
             notificationProcessor.classworkDeadlineDidUpdate(savedClasswork);
         }
+
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
 
         return savedClasswork;

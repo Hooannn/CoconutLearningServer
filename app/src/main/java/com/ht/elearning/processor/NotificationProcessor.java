@@ -383,6 +383,7 @@ public class NotificationProcessor {
 
 
     @Async
+    @Transactional
     public void classworkDeadlineDidUpdate(Classwork savedClasswork) {
         var deadline = savedClasswork.getDeadline();
         if (deadline == null) {
