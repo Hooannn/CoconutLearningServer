@@ -27,4 +27,6 @@ public interface AssignmentScheduleRepository extends JpaRepository<AssignmentSc
     void updateRemindedByClassworkId(Boolean reminded, String classworkId);
 
     void deleteAllByClassworkId(String classworkId);
+
+    List<AssignmentSchedule> findAllByClassworkIdAndScheduledTime(String classworkId, Date scheduledTime);
 }

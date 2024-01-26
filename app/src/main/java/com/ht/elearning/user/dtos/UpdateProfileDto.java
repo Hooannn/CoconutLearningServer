@@ -19,4 +19,10 @@ public class UpdateProfileDto {
 
     @JsonProperty("avatar_url")
     private String avatarUrl;
+
+    @JsonProperty("enabled_push_notification")
+    private boolean enabledPushNotification;
+
+    @JsonProperty("enabled_email_notification")
+    private boolean enabledEmailNotification;
 }

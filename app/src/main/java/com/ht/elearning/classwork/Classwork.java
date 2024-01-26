@@ -3,6 +3,7 @@ package com.ht.elearning.classwork;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ht.elearning.assignment.Assignment;
+import com.ht.elearning.assignment.AssignmentSchedule;
 import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.comment.Comment;
 import com.ht.elearning.config.BaseEntity;
@@ -51,6 +52,10 @@ public class Classwork extends BaseEntity {
 
     @OneToMany(mappedBy = "classwork", targetEntity = Assignment.class, cascade = CascadeType.REMOVE)
     private List<Assignment> assignments;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "classwork", targetEntity = AssignmentSchedule.class, cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    private List<AssignmentSchedule> schedules;
 
     @ManyToMany
     @JoinTable(

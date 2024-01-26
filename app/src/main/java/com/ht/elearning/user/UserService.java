@@ -103,6 +103,8 @@ public class UserService {
         Optional.ofNullable(updateProfileDto.getAvatarUrl()).ifPresent(user::setAvatarUrl);
         Optional.ofNullable(updateProfileDto.getFirstName()).ifPresent(user::setFirstName);
         Optional.ofNullable(updateProfileDto.getLastName()).ifPresent(user::setLastName);
+        Optional.of(updateProfileDto.isEnabledEmailNotification()).ifPresent(user::setEnabledEmailNotification);
+        Optional.of(updateProfileDto.isEnabledPushNotification()).ifPresent(user::setEnabledPushNotification);
 
         save(user);
 

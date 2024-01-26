@@ -1,7 +1,6 @@
 package com.ht.elearning.assignment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.config.BaseEntity;
 import com.ht.elearning.file.File;
@@ -10,7 +9,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.Date;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)

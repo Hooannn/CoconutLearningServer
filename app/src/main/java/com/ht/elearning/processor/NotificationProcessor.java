@@ -67,6 +67,7 @@ public class NotificationProcessor {
                     eventData.put("notification_id", notification.getId());
                     notifySocket(target, "notification:created", eventData);
 
+                    if (!user.isEnabledPushNotification()) return;
                     try {
                         var batchResponse = pushNotificationService.push(
                                 target,
@@ -132,9 +133,10 @@ public class NotificationProcessor {
                     var target = users.stream().map(User::getId).toList();
                     notifySocket(target, "notification:created", new HashMap<>());
 
+                    List<String> pushNotificationTargets = users.stream().filter(User::isEnabledPushNotification).map(User::getId).toList();
                     try {
                         var batchResponse = pushNotificationService.push(
-                                target,
+                                pushNotificationTargets,
                                 Notification.builder()
                                         .setBody(notification.getContent())
                                         .setTitle(notification.getTitle())
@@ -149,7 +151,7 @@ public class NotificationProcessor {
                     } catch (Exception e) {
                         logger.warn(
                                 "Handle[processClassroomInvitation] - Catch exception while pushing notification - UserIds[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                                target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                                pushNotificationTargets, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
                         );
                     }
                 }
@@ -174,11 +176,13 @@ public class NotificationProcessor {
     @Async
     public void memberDidJoin(Classroom classroom, User user) {
         var notification = notificationService.createMemberDidJoinNotification(user, classroom);
-        var target = classroom.getOwner().getId();
+        var owner = classroom.getOwner();
+        var target = owner.getId();
         HashMap<String, String> eventData = new HashMap<>();
         eventData.put("notification_id", notification.getId());
         notifySocket(target, "notification:created", eventData);
 
+        if (!owner.isEnabledPushNotification()) return;
         try {
             var batchResponse = pushNotificationService.push(
                     target,
@@ -190,12 +194,12 @@ public class NotificationProcessor {
                     new HashMap<>()
             );
             logger.debug(
-                    "Handle[processClassroomJoining] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    "Handle[memberDidJoin] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
                     batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
             );
         } catch (Exception e) {
             logger.warn(
-                    "Handle[processClassroomJoining] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    "Handle[memberDidJoin] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
                     target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
             );
         }
@@ -204,11 +208,13 @@ public class NotificationProcessor {
     @Async
     public void memberDidLeave(Classroom classroom, User user) {
         var notification = notificationService.createMemberDidLeaveNotification(user, classroom);
-        var target = classroom.getOwner().getId();
+        var owner = classroom.getOwner();
+        var target = owner.getId();
         HashMap<String, String> eventData = new HashMap<>();
         eventData.put("notification_id", notification.getId());
         notifySocket(target, "notification:created", eventData);
 
+        if (!owner.isEnabledPushNotification()) return;
         try {
             var batchResponse = pushNotificationService.push(
                     target,
@@ -220,12 +226,12 @@ public class NotificationProcessor {
                     new HashMap<>()
             );
             logger.debug(
-                    "Handle[processClassroomLeaving] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    "Handle[memberDidLeave] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
                     batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
             );
         } catch (Exception e) {
             logger.warn(
-                    "Handle[processClassroomLeaving] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    "Handle[memberDidLeave] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
                     target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
             );
         }
@@ -236,15 +242,14 @@ public class NotificationProcessor {
         var classroom = savedPost.getClassroom();
         var members = classroom.getMembers().stream().filter(m -> !m.getId().equals(savedPost.getAuthor().getId())).toList();
         var memberIds = members.stream().map(User::getId).toList();
-
         var notifications = notificationService.createPostDidCreateNotifications(members, savedPost);
         notifySocket(memberIds, "notification:created", new HashMap<>());
-
         var notification = notifications.get(0);
 
+        List<String> pushNotificationTargets = members.stream().filter(User::isEnabledPushNotification).map(User::getId).toList();
         try {
             var batchResponse = pushNotificationService.push(
-                    memberIds,
+                    pushNotificationTargets,
                     Notification.builder()
                             .setBody(notification.getContent())
                             .setTitle(notification.getTitle())
@@ -259,7 +264,7 @@ public class NotificationProcessor {
         } catch (Exception e) {
             logger.warn(
                     "Handle[processNewPost] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                    memberIds, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                    pushNotificationTargets, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
             );
         }
     }
@@ -272,13 +277,11 @@ public class NotificationProcessor {
                 savedComment.getPost().getAuthor();
 
         if (recipient.getId().equals(savedComment.getAuthor().getId())) return;
-
         var notifications = notificationService.createCommentDidCreateNotifications(List.of(recipient), savedComment);
-
         notifySocket(recipient.getId(), "notification:created", new HashMap<>());
-
         var notification = notifications.get(0);
 
+        if (!recipient.isEnabledPushNotification()) return;
         try {
             var batchResponse = pushNotificationService.push(
                     recipient.getId(),
@@ -290,12 +293,12 @@ public class NotificationProcessor {
                     new HashMap<>()
             );
             logger.debug(
-                    "Handle[processNewComment] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                    "Handle[commentDidCreate] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
                     batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
             );
         } catch (Exception e) {
             logger.warn(
-                    "Handle[processNewComment] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                    "Handle[commentDidCreate] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
                     recipient.getId(), notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
             );
         }
@@ -321,9 +324,10 @@ public class NotificationProcessor {
             var recipientIds = recipients.stream().map(User::getId).toList();
             notifySocket(recipientIds, "notification:created", new HashMap<>());
 
+            List<String> pushNotificationTargets = recipients.stream().filter(User::isEnabledPushNotification).map(User::getId).toList();
             try {
                 var batchResponse = pushNotificationService.push(
-                        recipientIds,
+                        pushNotificationTargets,
                         Notification.builder()
                                 .setBody(notification.getContent())
                                 .setTitle(notification.getTitle())
@@ -332,13 +336,13 @@ public class NotificationProcessor {
                         new HashMap<>()
                 );
                 logger.debug(
-                        "Handle[processNewClasswork] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                        "Handle[classworkDidCreate] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
                         batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
                 );
             } catch (Exception e) {
                 logger.warn(
-                        "Handle[processNewClasswork] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                        recipientIds, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                        "Handle[classworkDidCreate] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                        pushNotificationTargets, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
                 );
             }
         });
@@ -346,13 +350,16 @@ public class NotificationProcessor {
         //Just send mail for assignees
         CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
             var assignees = savedClasswork.getAssignees();
-            String mailSubject = "Elearning - Classroom: " + savedClasswork.getClassroom().getName();
-            assignees.forEach(assignee -> {
+            String mailSubject = "Coconut - Classroom: " + savedClasswork.getClassroom().getName();
+
+            List<User> sendMailTargets = assignees.stream().filter(User::isEnabledEmailNotification).toList();
+
+            sendMailTargets.forEach(assignee -> {
                 try {
                     mailService.sendNewClassworkMail(assignee.getEmail(), mailSubject, savedClasswork);
                 } catch (MessagingException e) {
                     logger.warn(
-                            "Handle[processNewClasswork] - Catch exception while sending mail - To[{}] - Subject[{}] - ClassworkId[{}]",
+                            "Handle[classworkDidCreate] - Catch exception while sending mail - To[{}] - Subject[{}] - ClassworkId[{}]",
                             assignee.getEmail(), mailSubject, savedClasswork.getId()
                     );
                 }
@@ -366,16 +373,10 @@ public class NotificationProcessor {
             var assignees = savedClasswork.getAssignees();
             Date scheduledTime = new Date(deadline.getTime() - 24 * 60 * 60 * 1000);
 
-            // Don't create schedule if scheduled time is today
+            // Don't create schedules if scheduled time is today
             if (Helper.isSameDay(scheduledTime, new Date())) return;
 
-            var schedules = assignees.stream().map(assignee -> AssignmentSchedule.builder()
-                    .scheduledTime(scheduledTime)
-                    .user(assignee)
-                    .classwork(savedClasswork)
-                    .build()
-            ).toList();
-            assignmentScheduleService.saveAll(schedules);
+            assignmentScheduleService.createMany(savedClasswork, assignees, scheduledTime);
         });
 
         CompletableFuture.allOf(createNotificationsFuture, sendMailFuture, createSchedulesFuture).join();
@@ -383,17 +384,73 @@ public class NotificationProcessor {
 
 
     @Async
+    public void classworkAssigneesDidUpdate(Classwork savedClasswork, Set<User> newAssignees) {
+        var author = savedClasswork.getAuthor();
+
+        CompletableFuture<Void> createNotificationsFuture = CompletableFuture.runAsync(() -> {
+            List<User> recipients = newAssignees.stream()
+                    .filter(r -> !r.getId().equals(author.getId()))
+                    .toList();
+
+            var notifications = notificationService.createClassworkDidCreateNotifications(recipients, savedClasswork);
+            var notification = notifications.get(0);
+            var recipientIds = recipients.stream().map(User::getId).toList();
+            notifySocket(recipientIds, "notification:created", new HashMap<>());
+
+            List<String> pushNotificationTargets = recipients.stream().filter(User::isEnabledPushNotification).map(User::getId).toList();
+            try {
+                var batchResponse = pushNotificationService.push(
+                        pushNotificationTargets,
+                        Notification.builder()
+                                .setBody(notification.getContent())
+                                .setTitle(notification.getTitle())
+                                .setImage(notification.getImageUrl())
+                                .build(),
+                        new HashMap<>()
+                );
+                logger.debug(
+                        "Handle[classworkAssigneesDidUpdate] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                        batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+                );
+            } catch (Exception e) {
+                logger.warn(
+                        "Handle[classworkAssigneesDidUpdate] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                        pushNotificationTargets, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                );
+            }
+        });
+
+        CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
+            String mailSubject = "Coconut - Classroom: " + savedClasswork.getClassroom().getName();
+            List<User> sendMailTargets = newAssignees.stream().filter(User::isEnabledEmailNotification).toList();
+            sendMailTargets.forEach(assignee -> {
+                try {
+                    mailService.sendNewClassworkMail(assignee.getEmail(), mailSubject, savedClasswork);
+                } catch (MessagingException e) {
+                    logger.warn(
+                            "Handle[classworkAssigneesDidUpdate] - Catch exception while sending mail - To[{}] - Subject[{}] - ClassworkId[{}]",
+                            assignee.getEmail(), mailSubject, savedClasswork.getId()
+                    );
+                }
+            });
+        });
+
+        CompletableFuture.allOf(createNotificationsFuture, sendMailFuture).join();
+    }
+
+
+    @Async
     @Transactional
     public void classworkDeadlineDidUpdate(Classwork savedClasswork) {
+        assignmentScheduleService.deleteAllByClassworkId(savedClasswork.getId());
         var deadline = savedClasswork.getDeadline();
-        if (deadline == null) {
-            assignmentScheduleService.updateRemindedByClassworkId(true, savedClasswork.getId());
-            return;
-        }
+        if (deadline == null) return;
+
         Date scheduledTime = new Date(deadline.getTime() - 24 * 60 * 60 * 1000);
+        assignmentScheduleService.createMany(savedClasswork, savedClasswork.getAssignees(), scheduledTime);
 
-        assignmentScheduleService.updateScheduledTimeByClassworkId(scheduledTime, savedClasswork.getId());
-
+        //Remind if the updated deadline is today
+        //Exp: If the old deadline is 2021-10-21 and the updated deadline is 2021-10-11 and today is 2021-10-11
         var schedules = assignmentScheduleService.findUnremindedSchedulesByClassworkIdForToday(savedClasswork.getId());
         assignmentScheduleService.remind(schedules, logger);
     }
@@ -404,6 +461,8 @@ public class NotificationProcessor {
         var recipient = savedAssignment.getClasswork().getAuthor();
         var notification = notificationService.createAssignmentDidCreateNotification(recipient, savedAssignment);
         notifySocket(recipient.getId(), "notification:created", new HashMap<>());
+
+        if (!recipient.isEnabledPushNotification()) return;
         try {
             var batchResponse = pushNotificationService.push(
                     recipient.getId(),
@@ -442,6 +501,8 @@ public class NotificationProcessor {
         var student = savedAssignment.getAuthor();
         var notification = notificationService.createGradeDidCreateNotification(student, savedAssignment);
         notifySocket(student.getId(), "notification:created", new HashMap<>());
+
+        if (!student.isEnabledPushNotification()) return;
         try {
             var batchResponse = pushNotificationService.push(
                     student.getId(),

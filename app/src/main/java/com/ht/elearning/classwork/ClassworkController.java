@@ -1,6 +1,5 @@
 package com.ht.elearning.classwork;
 
-import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.classwork.dtos.CreateClassworkCategoryDto;
 import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkCategoryDto;
@@ -25,8 +24,6 @@ import java.util.List;
 public class ClassworkController {
     private final ClassworkCategoryService classworkCategoryService;
     private final ClassworkService classworkService;
-    private final ClassroomService classroomService;
-
 
     @GetMapping("/{classroomId}/categories")
     public ResponseEntity<Response<List<ClassworkCategory>>> findCategoriesByClassroomId(
@@ -44,6 +41,37 @@ public class ClassworkController {
         );
     }
 
+    @GetMapping("/{classroomId}/upcoming/provider")
+    public ResponseEntity<Response<List<Classwork>>> findUpcomingClassworkByClassroomIdForProvider(
+            @PathVariable String classroomId
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classwork = classworkService.findUpcomingClassworkByClassroomId(classroomId, authentication.getPrincipal().toString(), true);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        ResponseMessage.OK,
+                        true,
+                        classwork
+                )
+        );
+    }
+
+    @GetMapping("/{classroomId}/upcoming/student")
+    public ResponseEntity<Response<List<Classwork>>> findUpcomingClassworkByClassroomIdForStudent(
+            @PathVariable String classroomId
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classwork = classworkService.findUpcomingClassworkByClassroomId(classroomId, authentication.getPrincipal().toString(), false);
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        ResponseMessage.OK,
+                        true,
+                        classwork
+                )
+        );
+    }
 
     @PostMapping("/{classroomId}/categories")
     public ResponseEntity<Response<ClassworkCategory>> createCategory(
@@ -62,7 +90,6 @@ public class ClassworkController {
         );
     }
 
-
     @PutMapping("/{classroomId}/categories/{categoryId}")
     public ResponseEntity<Response<ClassworkCategory>> updateCategory(
             @PathVariable String categoryId,
@@ -80,7 +107,6 @@ public class ClassworkController {
         );
     }
 
-
     @DeleteMapping("/{classroomId}/categories/{categoryId}")
     public ResponseEntity<Response<?>> deleteCategory(@PathVariable String categoryId, @PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -94,7 +120,6 @@ public class ClassworkController {
                 )
         );
     }
-
 
     @GetMapping("/{classroomId}")
     public ResponseEntity<Response<List<?>>> findByClassroomId(
@@ -111,7 +136,6 @@ public class ClassworkController {
                 )
         );
     }
-
 
     @GetMapping("/{classroomId}/{classworkId}")
     public ResponseEntity<Response<?>> findByClassroomIdAndClassworkId(
@@ -130,7 +154,6 @@ public class ClassworkController {
         );
     }
 
-
     @PostMapping("/{classroomId}")
     public ResponseEntity<Response<Classwork>> create(
             @Valid @RequestBody CreateClassworkDto createClassworkDto,
@@ -147,7 +170,6 @@ public class ClassworkController {
                 )
         );
     }
-
 
     @PutMapping("/{classroomId}/{classworkId}")
     public ResponseEntity<Response<Classwork>> update(
@@ -166,7 +188,6 @@ public class ClassworkController {
                 )
         );
     }
-
 
     @DeleteMapping("/{classroomId}/{classworkId}")
     public ResponseEntity<Response<Classwork>> delete(

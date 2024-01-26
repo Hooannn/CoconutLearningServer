@@ -45,6 +45,14 @@ public class User extends BaseEntity implements UserDetails {
     @Enumerated(value = EnumType.STRING)
     private Role role;
 
+    @Column(columnDefinition = "BOOLEAN DEFAULT true")
+    @JsonProperty("enabled_push_notification")
+    private boolean enabledPushNotification;
+
+    @Column(columnDefinition = "BOOLEAN DEFAULT true")
+    @JsonProperty("enabled_email_notification")
+    private boolean enabledEmailNotification;
+
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {

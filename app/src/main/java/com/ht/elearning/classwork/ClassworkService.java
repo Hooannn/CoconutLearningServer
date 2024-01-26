@@ -9,17 +9,17 @@ import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.file.FileService;
 import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
+import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +32,6 @@ public class ClassworkService {
     private final FileService fileService;
     private final UserService userService;
 
-
     public List<?> findAllByClassroomId(String classroomId, String userId) {
         var isProvider = classroomService.isProvider(classroomId, userId);
         if (isProvider) {
@@ -41,7 +40,6 @@ public class ClassworkService {
 
         return classworkRepository.findAllByClassroomIdAndAssigneesId(classroomId, userId, StudentClassworkView.class);
     }
-
 
     public Classwork create(CreateClassworkDto createClassworkDto, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
@@ -82,7 +80,6 @@ public class ClassworkService {
         return savedClasswork;
     }
 
-
     public Classwork update(UpdateClassworkDto updateClassworkDto, String classworkId, String classroomId, String userId) {
         if (!classroomService.hasClasswork(classroomId, classworkId))
             throw new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST);
@@ -93,17 +90,24 @@ public class ClassworkService {
 
         var classwork = classworkRepository.findById(classworkId)
                 .orElseThrow(() -> new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST));
+
         AtomicBoolean isDeadlineChanged = new AtomicBoolean(false);
+
         Optional.ofNullable(updateClassworkDto.getTitle()).ifPresent(classwork::setTitle);
         Optional.ofNullable(updateClassworkDto.getDescription()).ifPresent(classwork::setDescription);
         Optional.of(updateClassworkDto.getScore()).ifPresent(classwork::setScore);
 
-        //TODO: check if user want to remove deadline or not
-        Optional.ofNullable(updateClassworkDto.getDeadline()).ifPresent(deadline -> {
+        Optional.ofNullable(updateClassworkDto.getDeadline()).ifPresentOrElse(deadline -> {
             if (deadline.before(new Date()))
                 throw new HttpException(ErrorMessage.DEADLINE_MUST_BE_IN_FUTURE, HttpStatus.BAD_REQUEST);
+            if (classwork.getDeadline() == null || classwork.getDeadline().compareTo(updateClassworkDto.getDeadline()) != 0) {
+                isDeadlineChanged.set(true);
+                classwork.setDeadline(deadline);
+            }
+        }, () -> {
+            if (classwork.getDeadline() == null) return;
             isDeadlineChanged.set(true);
-            classwork.setDeadline(deadline);
+            classwork.setDeadline(null);
         });
 
         Optional.ofNullable(updateClassworkDto.getCategoryId()).ifPresentOrElse(categoryId -> {
@@ -118,13 +122,20 @@ public class ClassworkService {
             classwork.setFiles(new HashSet<>(files));
         });
 
-        //TODO: handle notifications, assignment_schedules for changed assignees
+        AtomicReference<Set<User>> newAssignees = new AtomicReference<>(new HashSet<>());
+
         Optional.ofNullable(updateClassworkDto.getAssigneeIds()).ifPresent(assigneeIds -> {
             var assignees = classroom.getUsers().stream()
                     .filter(user -> updateClassworkDto.getAssigneeIds().contains(user.getId()))
                     .collect(Collectors.toSet());
+
             if (assignees.isEmpty())
                 throw new HttpException(ErrorMessage.ASSIGNEES_MUST_BE_SPECIFIED, HttpStatus.BAD_REQUEST);
+
+            newAssignees.set(assignees.stream()
+                    .filter(assignee -> !classwork.getAssignees().contains(assignee))
+                    .collect(Collectors.toSet()));
+
             classwork.setAssignees(assignees);
         });
 
@@ -134,11 +145,17 @@ public class ClassworkService {
             notificationProcessor.classworkDeadlineDidUpdate(savedClasswork);
         }
 
+        if (!newAssignees.get().isEmpty()) {
+            notificationProcessor.classworkAssigneesDidUpdate(savedClasswork, newAssignees.get());
+            if (!isDeadlineChanged.get()) {
+                notificationProcessor.classworkDeadlineDidUpdate(savedClasswork);
+            }
+        }
+
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
 
         return savedClasswork;
     }
-
 
     public boolean deleteById(String classworkId, String classroomId, String userId) {
         if (!classroomService.hasClasswork(classroomId, classworkId))
@@ -155,18 +172,15 @@ public class ClassworkService {
         return true;
     }
 
-
     public Classwork findById(String id) {
         return classworkRepository.findById(id)
                 .orElseThrow(() -> new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 
-
     public StudentClassworkView findByIdForStudent(String id) {
         return classworkRepository.findById(id, StudentClassworkView.class)
                 .orElseThrow(() -> new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
-
 
     public Object findByClassroomIdAndClassworkId(String classroomId, String classworkId, String userId) {
         if (!classroomService.hasClasswork(classroomId, classworkId))
@@ -181,8 +195,20 @@ public class ClassworkService {
         return findByIdForStudent(classworkId);
     }
 
-
     public boolean isAssignee(String classworkId, String userId) {
         return classworkRepository.existsByIdAndAssigneesId(classworkId, userId);
+    }
+
+    public List<Classwork> findUpcomingClassworkByClassroomId(String classroomId, String userId, boolean forProvider) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nowPlus7 = now.plusDays(7);
+        Date nowPlus7Date = Date.from(nowPlus7.atZone(ZoneId.systemDefault()).toInstant());
+        if (forProvider) {
+            boolean isProvider = classroomService.isProvider(classroomId, userId);
+            if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
+            return classworkRepository.findAllByClassroomIdAndDeadlineBetweenOrderByDeadlineAsc(classroomId, new Date(), nowPlus7Date);
+        } else {
+            return classworkRepository.findAllByClassroomIdAndAssigneesIdAndDeadlineBetweenOrderByDeadlineAsc(classroomId, userId, new Date(), nowPlus7Date);
+        }
     }
 }

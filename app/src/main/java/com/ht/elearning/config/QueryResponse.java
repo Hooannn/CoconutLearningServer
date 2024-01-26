@@ -7,8 +7,8 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class QueryResponse<T> {
-    private int total;
-    private int took;
+    private long total;
+    private long took;
     private int status;
     private String message;
     private boolean success;

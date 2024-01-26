@@ -21,17 +21,18 @@ public class NotificationController {
 
 
     @GetMapping("/own")
-    public ResponseEntity<QueryResponse<List<Notification>>> findMyNotifications() {
+    public ResponseEntity<QueryResponse<List<Notification>>> findMyNotifications(@RequestParam(defaultValue = "0") int skip,
+                                                                                 @RequestParam(defaultValue = "20") int limit) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var notifications = notificationService.findMyNotifications(authentication.getPrincipal().toString());
+        var queryPair = notificationService.findMyNotifications(authentication.getPrincipal().toString(), skip, limit);
         return ResponseEntity.ok(
                 new QueryResponse<>(
-                        0,
-                        0,
+                        queryPair.total(),
+                        queryPair.results().size(),
                         HttpStatus.OK.value(),
                         "Ok",
                         true,
-                        notifications
+                        queryPair.results()
                 )
         );
     }

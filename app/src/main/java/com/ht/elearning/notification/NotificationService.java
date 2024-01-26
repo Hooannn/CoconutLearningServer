@@ -11,13 +11,17 @@ import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.invitation.InvitationType;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
+import com.ht.elearning.utils.QueryPair;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.format.datetime.DateFormatter;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.awt.print.Pageable;
 import java.util.List;
 import java.util.Locale;
+
 
 @Service
 @RequiredArgsConstructor
@@ -25,8 +29,11 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
 
 
-    public List<Notification> findMyNotifications(String userId) {
-        return notificationRepository.findAllByRecipientId(userId);
+    public QueryPair<Notification> findMyNotifications(String userId, int skip, int limit) {
+        PageRequest pageable = PageRequest.of(skip, limit);
+        Long total = notificationRepository.countByRecipientId(userId);
+        var notifications = notificationRepository.findAllByRecipientIdOrderByCreatedAtDesc(userId, pageable);
+        return new QueryPair<>(notifications, total);
     }
 
 
