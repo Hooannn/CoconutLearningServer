@@ -2,6 +2,7 @@ package com.ht.elearning.file;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.file.dtos.RemoveManyFilesDto;
 import com.ht.elearning.user.User;
 import com.ht.elearning.user.UserService;
@@ -35,20 +36,21 @@ public class FileService {
     }
 
     public boolean remove(String fileId, String createdBy) {
-        var file = fileRepository.findByIdAndCreatorId(fileId, createdBy).orElseThrow(() -> new HttpException("File not found", HttpStatus.BAD_REQUEST));
+        var file = fileRepository.findByIdAndCreatorId(fileId, createdBy)
+                .orElseThrow(() -> new HttpException(ErrorMessage.FILE_NOT_FOUND, HttpStatus.BAD_REQUEST));
         String endpoint = "/" + fileId;
         var res = fileVolumeApiClient.delete()
                 .uri(endpoint)
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         response -> {
-                            throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
+                            throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
                         })
                 .bodyToMono(RemoveFileResponse.class)
                 .block();
 
         if (res == null)
-            throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
 
         fileRepository.delete(file);
         return true;
@@ -56,7 +58,8 @@ public class FileService {
 
 
     public File update(String fileId, MultipartFile multipartFile, String createdBy) {
-        var file = fileRepository.findByIdAndCreatorId(fileId, createdBy).orElseThrow(() -> new HttpException("File not found", HttpStatus.BAD_REQUEST));
+        var file = fileRepository.findByIdAndCreatorId(fileId, createdBy)
+                .orElseThrow(() -> new HttpException(ErrorMessage.FILE_NOT_FOUND, HttpStatus.BAD_REQUEST));
         String endpoint = "/" + fileId;
         String contentType = file.getContentType();
         var uploadResponse = fileVolumeApiClient.post()
@@ -66,13 +69,13 @@ public class FileService {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         response -> {
-                            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+                            throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
                         })
                 .bodyToMono(UploadFileResponse.class)
                 .block();
 
         if (uploadResponse == null)
-            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
 
         file.setETag(uploadResponse.getETag());
         file.setSize(uploadResponse.getSize());
@@ -89,13 +92,13 @@ public class FileService {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         response -> {
-                            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+                            throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
                         })
                 .bodyToMono(ReadDirAssignResponse.class)
                 .block();
 
         if (readDirAssignResponse == null)
-            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
 
         var fileId = readDirAssignResponse.getFid();
         String endpoint = "/" + fileId;
@@ -107,13 +110,13 @@ public class FileService {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         response -> {
-                            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+                            throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
                         })
                 .bodyToMono(UploadFileResponse.class)
                 .block();
 
         if (uploadResponse == null)
-            throw new HttpException("Something occurred while uploading. Please try again", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
 
         File fileToSave = File.builder()
                 .id(fileId)
@@ -142,13 +145,13 @@ public class FileService {
                     .retrieve()
                     .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                             response -> {
-                                throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
+                                throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
                             })
                     .bodyToMono(RemoveFileResponse.class)
                     .block();
 
             if (res == null)
-                throw new HttpException("Something occurred while removing. Please try again", HttpStatus.BAD_REQUEST);
+                throw new HttpException(ErrorMessage.SOMETHING_WRONG, HttpStatus.BAD_REQUEST);
 
             fileRepository.delete(file);
         }

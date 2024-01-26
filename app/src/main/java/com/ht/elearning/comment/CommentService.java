@@ -6,6 +6,7 @@ import com.ht.elearning.comment.dtos.CreateClassworkCommentDto;
 import com.ht.elearning.comment.dtos.CreatePostCommentDto;
 import com.ht.elearning.comment.dtos.UpdateCommentDto;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.post.PostService;
 import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
@@ -32,11 +33,11 @@ public class CommentService {
     public Comment createForPost(CreatePostCommentDto createPostCommentDto, String authorId) {
         var classroom = classroomService.findById(createPostCommentDto.getClassroomId());
         var isMember = classroomService.isMember(classroom, authorId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        if (!isMember) throw new HttpException(ErrorMessage.USER_IS_NOT_MEMBER, HttpStatus.FORBIDDEN);
 
         var post = postService.findById(createPostCommentDto.getPostId());
         if (!post.getClassroom().getId().equals(createPostCommentDto.getClassroomId()))
-            throw new HttpException("No permission", HttpStatus.FORBIDDEN);
+            throw new HttpException(ErrorMessage.NO_PERMISSION, HttpStatus.FORBIDDEN);
 
         var author = userService.findById(authorId);
         var comment = Comment.builder()
@@ -56,11 +57,11 @@ public class CommentService {
     public Comment createForClasswork(CreateClassworkCommentDto createClassworkCommentDto, String authorId) {
         var classroom = classroomService.findById(createClassworkCommentDto.getClassroomId());
         var isMember = classroomService.isMember(classroom, authorId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        if (!isMember) throw new HttpException(ErrorMessage.USER_IS_NOT_MEMBER, HttpStatus.FORBIDDEN);
 
         var classwork = classworkService.findById(createClassworkCommentDto.getClassworkId());
         if (!classwork.getClassroom().getId().equals(createClassworkCommentDto.getClassroomId()))
-            throw new HttpException("No permission", HttpStatus.FORBIDDEN);
+            throw new HttpException(ErrorMessage.NO_PERMISSION, HttpStatus.FORBIDDEN);
 
         var author = userService.findById(authorId);
         var comment = Comment.builder()
@@ -80,7 +81,7 @@ public class CommentService {
     public Comment update(UpdateCommentDto updateCommentDto, String commentId, String authorId) {
         var classroom = classroomService.findById(updateCommentDto.getClassroomId());
         var comment = commentRepository.findByIdAndAuthorId(commentId, authorId)
-                .orElseThrow(() -> new HttpException("Comment not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.COMMENT_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         Optional.ofNullable(updateCommentDto.getBody()).ifPresent(comment::setBody);
 
@@ -93,7 +94,7 @@ public class CommentService {
     public boolean delete(String id, String classroomId, String authorId) {
         var classroom = classroomService.findById(classroomId);
         var comment = commentRepository.findByIdAndAuthorId(id, authorId)
-                .orElseThrow(() -> new HttpException("Comment not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.COMMENT_NOT_FOUND, HttpStatus.BAD_REQUEST));
         commentRepository.delete(comment);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.COMMENT);
         return true;

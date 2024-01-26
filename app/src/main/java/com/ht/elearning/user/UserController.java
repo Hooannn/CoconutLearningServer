@@ -1,6 +1,7 @@
 package com.ht.elearning.user;
 
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import com.ht.elearning.user.dtos.CreateUserDto;
 import com.ht.elearning.user.dtos.UpdateUserDto;
 import jakarta.validation.Valid;
@@ -21,22 +22,6 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService userService;
 
-    @GetMapping("/authenticated")
-    @PreAuthorize("permitAll()")
-    public ResponseEntity<Response<User>> getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var user = userService.findById(authentication.getPrincipal().toString());
-        return ResponseEntity.ok(
-                new Response<>(
-                        HttpStatus.OK.value(),
-                        "Ok",
-                        true,
-                        user
-                )
-        );
-    }
-
-
     @GetMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:read')")
     public ResponseEntity<Response<User>> findByUserId(@PathVariable String userId) {
@@ -44,7 +29,7 @@ public class UserController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         user
                 )
@@ -58,7 +43,7 @@ public class UserController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created",
+                        ResponseMessage.CREATED,
                         true,
                         user
                 )
@@ -72,7 +57,7 @@ public class UserController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Started syncing",
+                        ResponseMessage.UPDATED,
                         true,
                         null
                 )
@@ -86,7 +71,7 @@ public class UserController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Updated",
+                        ResponseMessage.UPDATED,
                         true,
                         user
                 )
@@ -101,7 +86,7 @@ public class UserController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Deleted",
+                        ResponseMessage.DELETED,
                         success,
                         userId
                 )

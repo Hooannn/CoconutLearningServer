@@ -6,6 +6,7 @@ import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkCategoryDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkDto;
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -36,7 +37,7 @@ public class ClassworkController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "ok",
+                        ResponseMessage.OK,
                         true,
                         categories
                 )
@@ -54,7 +55,7 @@ public class ClassworkController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created successfully",
+                        ResponseMessage.CREATED,
                         true,
                         classworkCategory
                 )
@@ -72,7 +73,7 @@ public class ClassworkController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         classworkCategory
                 )
@@ -87,7 +88,7 @@ public class ClassworkController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Deleted",
+                        ResponseMessage.DELETED,
                         success,
                         null
                 )
@@ -104,7 +105,7 @@ public class ClassworkController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "ok",
+                        ResponseMessage.OK,
                         true,
                         classwork
                 )
@@ -122,7 +123,7 @@ public class ClassworkController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "ok",
+                        ResponseMessage.OK,
                         true,
                         classwork
                 )
@@ -140,7 +141,7 @@ public class ClassworkController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created successfully",
+                        ResponseMessage.CREATED,
                         true,
                         classwork
                 )
@@ -159,7 +160,7 @@ public class ClassworkController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         classwork
                 )
@@ -177,7 +178,7 @@ public class ClassworkController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Deleted",
+                        ResponseMessage.DELETED,
                         success,
                         null
                 )

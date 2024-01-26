@@ -3,6 +3,7 @@ package com.ht.elearning.classroom;
 
 import com.ht.elearning.classroom.dtos.*;
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         classrooms
                 )
@@ -46,7 +47,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         classrooms
                 )
@@ -62,7 +63,7 @@ public class ClassroomController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created",
+                        ResponseMessage.CREATED,
                         true,
                         classroom
                 )
@@ -77,7 +78,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         classroom
                 )
@@ -92,7 +93,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         classroom
                 )
@@ -107,7 +108,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Deleted",
+                        ResponseMessage.DELETED,
                         success,
                         null
                 )
@@ -122,7 +123,7 @@ public class ClassroomController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Removed",
+                        ResponseMessage.REMOVED,
                         success,
                         null
                 )
@@ -137,7 +138,7 @@ public class ClassroomController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Invited",
+                        ResponseMessage.INVITED,
                         success,
                         null
                 )
@@ -152,7 +153,7 @@ public class ClassroomController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Invited",
+                        ResponseMessage.INVITED,
                         success,
                         null
                 )
@@ -168,7 +169,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Removed invite successfully",
+                        ResponseMessage.INVITE_REMOVED,
                         success,
                         null
                 )
@@ -182,7 +183,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Successfully joined classroom",
+                        ResponseMessage.CLASSROOM_JOINED,
                         success,
                         null
                 )
@@ -196,7 +197,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Accepted",
+                        ResponseMessage.INVITE_ACCEPTED,
                         success,
                         null
                 )
@@ -210,7 +211,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Refused to join classroom",
+                        ResponseMessage.INVITE_DECLINED,
                         success,
                         null
                 )
@@ -224,7 +225,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Successfully left classroom",
+                        ResponseMessage.CLASSROOM_LEFT,
                         success,
                         null
                 )
@@ -238,7 +239,7 @@ public class ClassroomController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Successfully reset class code",
+                        ResponseMessage.CLASSROOM_CODE_RESET,
                         true,
                         classroom
                 )

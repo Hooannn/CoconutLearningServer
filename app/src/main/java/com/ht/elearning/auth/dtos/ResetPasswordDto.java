@@ -1,6 +1,7 @@
 package com.ht.elearning.auth.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -15,15 +16,15 @@ import org.hibernate.validator.constraints.Length;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResetPasswordDto {
-    @NotEmpty(message = "Email must not be empty")
-    @Email(message = "Email must be valid")
+    @NotEmpty(message = ValidationMessage.EMAIL_NOT_EMPTY)
+    @Email(message = ValidationMessage.EMAIL_VALID)
     private String email;
 
-    @NotEmpty(message = "New password must not be empty")
-    @Length(min = 6, message = "New password must have at least 6 characters")
+    @NotEmpty(message = ValidationMessage.NEW_PASSWORD_NOT_EMPTY)
+    @Length(min = 6, message = ValidationMessage.NEW_PASSWORD_MIN_6_CHARS)
     @JsonProperty("new_password")
     private String newPassword;
 
-    @NotEmpty(message = "Signature must not be empty")
+    @NotEmpty(message = ValidationMessage.SIGNATURE_NOT_EMPTY)
     private String signature;
 }

@@ -2,6 +2,7 @@ package com.ht.elearning.push_notification;
 
 import com.google.firebase.messaging.*;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.push_notification.dtos.Platform;
 import com.ht.elearning.push_notification.dtos.RegisterTokenDto;
 import com.ht.elearning.push_notification.dtos.RemoveTokenDto;
@@ -51,7 +52,7 @@ public class PushNotificationService {
 
     public FcmToken removeToken(RemoveTokenDto removeTokenDto, String userId, boolean throwOnFailure) {
         FcmToken token = throwOnFailure ? fcmTokenRepository.findById(userId)
-                .orElseThrow(() -> new HttpException("Token not found", HttpStatus.BAD_REQUEST)) :
+                .orElseThrow(() -> new HttpException(ErrorMessage.TOKEN_NOT_FOUND, HttpStatus.BAD_REQUEST)) :
                 fcmTokenRepository.findById(userId).orElse(null);
 
         if (token == null) return null;

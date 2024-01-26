@@ -7,6 +7,7 @@ import com.ht.elearning.assignment.dtos.UpdateGradeDto;
 import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.classwork.ClassworkService;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.file.File;
 import com.ht.elearning.file.FileService;
 import com.ht.elearning.processor.ClassroomUpdateType;
@@ -32,20 +33,20 @@ public class AssignmentService {
 
     public Assignment findByClassworkIdAndAuthorId(String classworkId, String authorId) {
         return assignmentRepository.findByClassworkIdAndAuthorId(classworkId, authorId)
-                .orElseThrow(() -> new HttpException("Assignment not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.ASSIGNMENT_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 
     public Assignment create(CreateAssignmentDto createAssignmentDto, String userId) {
         if (!classroomService.hasClasswork(createAssignmentDto.getClassroomId(), createAssignmentDto.getClassworkId()))
-            throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST);
 
         if (!classworkService.isAssignee(createAssignmentDto.getClassworkId(), userId))
-            throw new HttpException("No permission", HttpStatus.FORBIDDEN);
+            throw new HttpException(ErrorMessage.NO_PERMISSION, HttpStatus.FORBIDDEN);
 
         var classwork = classworkService.findById(createAssignmentDto.getClassworkId());
 
         if (classwork.getDeadline().before(new Date()))
-            throw new HttpException("Deadline is passed", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.DEADLINE_PASSED, HttpStatus.BAD_REQUEST);
 
         var assignment = assignmentRepository.findByClassworkIdAndAuthorId(createAssignmentDto.getClassworkId(), userId).orElse(null);
         Set<File> files = new HashSet<>(fileService.findAllById(createAssignmentDto.getFileIds()));
@@ -79,10 +80,10 @@ public class AssignmentService {
         var assignment = findByClassworkIdAndAuthorId(classworkId, userId);
 
         if (assignment.getGrade() != null)
-            throw new HttpException("Assignment is graded", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.ASSIGNMENT_GRADED, HttpStatus.BAD_REQUEST);
 
         if (assignment.getClasswork().getDeadline().before(new Date()))
-            throw new HttpException("Deadline is passed", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.DEADLINE_PASSED, HttpStatus.BAD_REQUEST);
 
         Optional.ofNullable(updateAssignmentDto.getDescription()).ifPresent(assignment::setDescription);
         Optional.ofNullable(updateAssignmentDto.getFileIds()).ifPresent(fileIds -> {
@@ -98,13 +99,13 @@ public class AssignmentService {
     public Assignment updateSubmittedStatus(boolean isSubmitted, String classworkId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
         var assignment = assignmentRepository.findByClassworkIdAndAuthorId(classworkId, userId)
-                .orElseThrow(() -> new HttpException("Assignment not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.ASSIGNMENT_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         if (assignment.getGrade() != null)
-            throw new HttpException("Assignment is graded", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.ASSIGNMENT_GRADED, HttpStatus.BAD_REQUEST);
 
         if (assignment.getClasswork().getDeadline().before(new Date()))
-            throw new HttpException("Deadline is passed", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.DEADLINE_PASSED, HttpStatus.BAD_REQUEST);
 
         assignment.setSubmitted(isSubmitted);
         var savedAssignment = assignmentRepository.save(assignment);
@@ -119,7 +120,7 @@ public class AssignmentService {
             var assignment = findByClassworkIdAndAuthorId(classworkId, authorId);
 
             if (!classroomService.hasClasswork(classroomId, assignment.getClasswork().getId()))
-                throw new HttpException("Assignment not found", HttpStatus.BAD_REQUEST);
+                throw new HttpException(ErrorMessage.ASSIGNMENT_NOT_FOUND, HttpStatus.BAD_REQUEST);
 
             return assignment;
         }
@@ -129,7 +130,7 @@ public class AssignmentService {
     public boolean deleteByClassworkIdAndAuthorId(String classworkId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
         var assignment = assignmentRepository.findByClassworkIdAndAuthorId(classworkId, userId)
-                .orElseThrow(() -> new HttpException("Assignment not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.ASSIGNMENT_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         assignmentRepository.delete(assignment);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.ASSIGNMENT);
@@ -139,10 +140,10 @@ public class AssignmentService {
     public long countSubmitted(String classworkId, String classroomId, String userId) {
         var isProvider = classroomService.isProvider(classroomId, userId);
 
-        if (!isProvider) throw new HttpException("No permission", HttpStatus.FORBIDDEN);
+        if (!isProvider) throw new HttpException(ErrorMessage.NO_PERMISSION, HttpStatus.FORBIDDEN);
 
         if (!classroomService.hasClasswork(classroomId, classworkId))
-            throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST);
 
         return assignmentRepository.countByClassworkIdAndSubmittedFalse(classworkId);
     }
@@ -150,10 +151,10 @@ public class AssignmentService {
     public List<Assignment> findAllByClassworkId(String classworkId, String classroomId, String userId) {
         var isProvider = classroomService.isProvider(classroomId, userId);
 
-        if (!isProvider) throw new HttpException("No permission", HttpStatus.FORBIDDEN);
+        if (!isProvider) throw new HttpException(ErrorMessage.NO_PERMISSION, HttpStatus.FORBIDDEN);
 
         if (!classroomService.hasClasswork(classroomId, classworkId))
-            throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST);
 
         return assignmentRepository.findAllByClassworkId(classworkId);
     }
@@ -162,20 +163,20 @@ public class AssignmentService {
     public Grade createGrade(CreateGradeDto createGradeDto, String classworkId, String classroomId, String studentId, String gradedBy) {
         var isProvider = classroomService.isProvider(classroomId, gradedBy);
 
-        if (!isProvider) throw new HttpException("No permission", HttpStatus.FORBIDDEN);
+        if (!isProvider) throw new HttpException(ErrorMessage.NO_PERMISSION, HttpStatus.FORBIDDEN);
 
         if (!classroomService.hasClasswork(classroomId, classworkId))
-            throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST);
 
         var assignment = findByClassworkIdAndAuthorId(classworkId, studentId);
 
         if (assignment.getGrade() != null)
-            throw new HttpException("Grade already exists", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.ASSIGNMENT_GRADED, HttpStatus.BAD_REQUEST);
 
         var maxScore = assignment.getClasswork().getScore();
 
         if (createGradeDto.getGrade() < 0 || createGradeDto.getGrade() > maxScore)
-            throw new HttpException("Grade must be between 0 and " + maxScore, HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.invalidGrade(maxScore), HttpStatus.BAD_REQUEST);
 
         Grade grade = Grade.builder()
                 .grade(createGradeDto.getGrade())

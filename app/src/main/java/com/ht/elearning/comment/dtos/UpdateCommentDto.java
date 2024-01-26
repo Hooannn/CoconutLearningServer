@@ -1,6 +1,7 @@
 package com.ht.elearning.comment.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class UpdateCommentDto {
     private String body;
 
-    @NotEmpty(message = "Classroom id must not be empty")
+    @NotEmpty(message = ValidationMessage.CLASSROOM_ID_NOT_EMPTY)
     @JsonProperty("classroom_id")
     private String classroomId;
 }

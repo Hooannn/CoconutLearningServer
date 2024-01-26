@@ -1,6 +1,7 @@
 package com.ht.elearning.file;
 
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import com.ht.elearning.file.dtos.RemoveManyFilesDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class FileController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         files
                 )
@@ -44,7 +45,7 @@ public class FileController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Uploaded successfully",
+                        ResponseMessage.UPLOADED,
                         true,
                         uploadedFiles
                 )
@@ -59,7 +60,7 @@ public class FileController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         file
                 )
@@ -74,7 +75,7 @@ public class FileController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Removed",
+                        ResponseMessage.REMOVED,
                         success,
                         null
                 )
@@ -89,7 +90,7 @@ public class FileController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Removed",
+                        ResponseMessage.REMOVED,
                         success,
                         null
                 )

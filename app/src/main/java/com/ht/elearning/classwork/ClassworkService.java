@@ -5,6 +5,7 @@ import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkDto;
 import com.ht.elearning.classwork.projections.StudentClassworkView;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.file.FileService;
 import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
@@ -45,7 +46,7 @@ public class ClassworkService {
     public Classwork create(CreateClassworkDto createClassworkDto, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
         var isProvider = classroomService.isProvider(classroom, userId);
-        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
+        if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
         var category = createClassworkDto.getCategoryId() != null ? classworkCategoryService.findByIdAndClassroomId(createClassworkDto.getCategoryId(), classroomId) : null;
         var files = fileService.findAllById(createClassworkDto.getFileIds());
 
@@ -53,10 +54,11 @@ public class ClassworkService {
                 .filter(user -> createClassworkDto.getAssigneeIds().contains(user.getId()))
                 .collect(Collectors.toSet());
 
-        if (assignees.isEmpty()) throw new HttpException("Assignees must be specified", HttpStatus.BAD_REQUEST);
+        if (assignees.isEmpty())
+            throw new HttpException(ErrorMessage.ASSIGNEES_MUST_BE_SPECIFIED, HttpStatus.BAD_REQUEST);
 
         if (createClassworkDto.getDeadline() != null && createClassworkDto.getDeadline().before(new Date()))
-            throw new HttpException("Deadline must be in the future", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.DEADLINE_MUST_BE_IN_FUTURE, HttpStatus.BAD_REQUEST);
 
         var author = userService.findById(userId);
         var classwork = Classwork.builder()
@@ -83,13 +85,14 @@ public class ClassworkService {
 
     public Classwork update(UpdateClassworkDto updateClassworkDto, String classworkId, String classroomId, String userId) {
         if (!classroomService.hasClasswork(classroomId, classworkId))
-            throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST);
 
         var classroom = classroomService.findById(classroomId);
         var isProvider = classroomService.isProvider(classroom, userId);
-        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
+        if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
 
-        var classwork = classworkRepository.findById(classworkId).orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
+        var classwork = classworkRepository.findById(classworkId)
+                .orElseThrow(() -> new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST));
         AtomicBoolean isDeadlineChanged = new AtomicBoolean(false);
         Optional.ofNullable(updateClassworkDto.getTitle()).ifPresent(classwork::setTitle);
         Optional.ofNullable(updateClassworkDto.getDescription()).ifPresent(classwork::setDescription);
@@ -98,7 +101,7 @@ public class ClassworkService {
         //TODO: check if user want to remove deadline or not
         Optional.ofNullable(updateClassworkDto.getDeadline()).ifPresent(deadline -> {
             if (deadline.before(new Date()))
-                throw new HttpException("Deadline must be in the future", HttpStatus.BAD_REQUEST);
+                throw new HttpException(ErrorMessage.DEADLINE_MUST_BE_IN_FUTURE, HttpStatus.BAD_REQUEST);
             isDeadlineChanged.set(true);
             classwork.setDeadline(deadline);
         });
@@ -120,7 +123,8 @@ public class ClassworkService {
             var assignees = classroom.getUsers().stream()
                     .filter(user -> updateClassworkDto.getAssigneeIds().contains(user.getId()))
                     .collect(Collectors.toSet());
-            if (assignees.isEmpty()) throw new HttpException("Assignees must be specified", HttpStatus.BAD_REQUEST);
+            if (assignees.isEmpty())
+                throw new HttpException(ErrorMessage.ASSIGNEES_MUST_BE_SPECIFIED, HttpStatus.BAD_REQUEST);
             classwork.setAssignees(assignees);
         });
 
@@ -138,13 +142,13 @@ public class ClassworkService {
 
     public boolean deleteById(String classworkId, String classroomId, String userId) {
         if (!classroomService.hasClasswork(classroomId, classworkId))
-            throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST);
 
         var classroom = classroomService.findById(classroomId);
         var isProvider = classroomService.isProvider(classroom, userId);
-        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
+        if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
         var classwork = classworkRepository.findById(classworkId)
-                .orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         classworkRepository.delete(classwork);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
@@ -153,18 +157,20 @@ public class ClassworkService {
 
 
     public Classwork findById(String id) {
-        return classworkRepository.findById(id).orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
+        return classworkRepository.findById(id)
+                .orElseThrow(() -> new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 
 
     public StudentClassworkView findByIdForStudent(String id) {
-        return classworkRepository.findById(id, StudentClassworkView.class).orElseThrow(() -> new HttpException("Classwork not found", HttpStatus.BAD_REQUEST));
+        return classworkRepository.findById(id, StudentClassworkView.class)
+                .orElseThrow(() -> new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 
 
     public Object findByClassroomIdAndClassworkId(String classroomId, String classworkId, String userId) {
         if (!classroomService.hasClasswork(classroomId, classworkId))
-            throw new HttpException("Classwork not found", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.CLASSWORK_NOT_FOUND, HttpStatus.BAD_REQUEST);
 
         var classroom = classroomService.find(classroomId, userId);
 

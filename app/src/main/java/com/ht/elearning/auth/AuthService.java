@@ -3,6 +3,7 @@ package com.ht.elearning.auth;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ht.elearning.auth.dtos.*;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.jwt.JwtService;
 import com.ht.elearning.processor.AppProcessor;
 import com.ht.elearning.push_notification.PushNotificationService;
@@ -47,7 +48,7 @@ public class AuthService {
 
     public AuthenticationResponse register(RegisterDto registerDto) {
         if (userRepository.existsByEmail(registerDto.getEmail())) {
-            throw new HttpException("Email is already registered", HttpStatus.BAD_REQUEST);
+            throw new HttpException(ErrorMessage.USER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
         }
         String hash = MD5.md5Hex(registerDto.getEmail().toLowerCase());
         String defaultAvatarUrl = "https://gravatar.com/avatar/" + hash;
@@ -93,11 +94,11 @@ public class AuthService {
         var signature = verifyAccountDto.getSignature();
         var email = verifyAccountDto.getEmail();
         var user = userRepository.findByEmail(email).orElseThrow(() -> new HttpException(
-                "Invalid signature",
+                ErrorMessage.INVALID_CREDENTIALS,
                 HttpStatus.FORBIDDEN
         ));
         if (user.isVerified()) {
-            throw new HttpException("Request is not acceptable", HttpStatus.NOT_ACCEPTABLE);
+            throw new HttpException(ErrorMessage.REQUEST_NOT_ACCEPTABLE, HttpStatus.NOT_ACCEPTABLE);
         }
         var validSignature = redisService.getValue("account_signature:" + email);
         if (signature.equals(validSignature)) {
@@ -115,14 +116,14 @@ public class AuthService {
                     .user(savedUser)
                     .build();
         }
-        throw new HttpException("Invalid signature", HttpStatus.FORBIDDEN);
+        throw new HttpException(ErrorMessage.INVALID_CREDENTIALS, HttpStatus.FORBIDDEN);
     }
 
 
     public boolean forgotPassword(ForgotPasswordDto forgotPasswordDto) {
         var email = forgotPasswordDto.getEmail();
         boolean exists = userRepository.existsByEmail(email);
-        if (!exists) throw new HttpException("Bad request", HttpStatus.BAD_REQUEST);
+        if (!exists) throw new HttpException(ErrorMessage.BAD_REQUEST, HttpStatus.BAD_REQUEST);
         try {
             appProcessor.userDidForgetPassword(email);
         } catch (MessagingException e) {
@@ -143,12 +144,12 @@ public class AuthService {
             redisService.deleteValue("reset_password_signature:" + user.getEmail());
             return true;
         }
-        throw new HttpException("Bad credentials", HttpStatus.FORBIDDEN);
+        throw new HttpException(ErrorMessage.INVALID_CREDENTIALS, HttpStatus.FORBIDDEN);
     }
 
 
     public Credentials refresh(RefreshDto refreshDto) {
-        final String ERROR_MESSAGE = "Bad credentials";
+        final String ERROR_MESSAGE = ErrorMessage.INVALID_CREDENTIALS;
         var token = refreshDto.getToken();
         var isValidToken = jwtService.isTokenValid(token, true);
         if (isValidToken) {
@@ -178,7 +179,8 @@ public class AuthService {
 
 
     public boolean resendAccountVerification(ResendAccountVerificationDto resendAccountVerificationDto) {
-        var user = userRepository.findByEmail(resendAccountVerificationDto.getEmail()).orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
+        var user = userRepository.findByEmail(resendAccountVerificationDto.getEmail())
+                .orElseThrow(() -> new HttpException(ErrorMessage.USER_NOT_FOUND, HttpStatus.BAD_REQUEST));
         try {
             appProcessor.userDidCreate(user);
         } catch (MessagingException e) {
@@ -202,12 +204,12 @@ public class AuthService {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         response -> {
-                            throw new HttpException("Invalid credentials", HttpStatus.FORBIDDEN);
+                            throw new HttpException(ErrorMessage.INVALID_CREDENTIALS, HttpStatus.FORBIDDEN);
                         })
                 .bodyToMono(GoogleUserInfo.class)
                 .block();
 
-        if (googleUserInfo == null) throw new HttpException("Invalid credentials", HttpStatus.FORBIDDEN);
+        if (googleUserInfo == null) throw new HttpException(ErrorMessage.INVALID_CREDENTIALS, HttpStatus.FORBIDDEN);
 
         var user = userRepository.findByEmail(googleUserInfo.getEmail()).orElse(null);
         boolean isNew = true;
@@ -230,7 +232,7 @@ public class AuthService {
         }
 
         userService.save(user);
-        
+
         if (isNew) {
             try {
                 appProcessor.userDidVerify(user);
@@ -248,7 +250,7 @@ public class AuthService {
 
 
     public boolean signOut(SignOutDto signOutDto, String userId) {
-        var user = userRepository.findById(userId).orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
+        var user = userRepository.findById(userId).orElseThrow(() -> new HttpException(ErrorMessage.USER_NOT_FOUND, HttpStatus.BAD_REQUEST));
         redisService.deleteValue("refresh_token:" + user.getId());
         pushNotificationService.removeToken(RemoveTokenDto
                 .builder()

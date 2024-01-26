@@ -2,6 +2,7 @@ package com.ht.elearning.notification;
 
 import com.ht.elearning.config.QueryResponse;
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +44,7 @@ public class NotificationController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         success,
                         null
                 )
@@ -58,7 +59,7 @@ public class NotificationController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         count
                 )
@@ -73,7 +74,7 @@ public class NotificationController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         success,
                         null
                 )
@@ -88,7 +89,7 @@ public class NotificationController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         success,
                         null
                 )

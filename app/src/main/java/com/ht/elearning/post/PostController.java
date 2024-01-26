@@ -1,6 +1,7 @@
 package com.ht.elearning.post;
 
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import com.ht.elearning.post.dtos.CreatePostDto;
 import com.ht.elearning.post.dtos.UpdatePostDto;
 import jakarta.validation.Valid;
@@ -28,7 +29,7 @@ public class PostController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         posts
                 )
@@ -42,7 +43,7 @@ public class PostController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created successfully",
+                        ResponseMessage.CREATED,
                         true,
                         post
                 )
@@ -57,7 +58,7 @@ public class PostController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         post
                 )
@@ -72,7 +73,7 @@ public class PostController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Deleted",
+                        ResponseMessage.DELETED,
                         success,
                         null
                 )

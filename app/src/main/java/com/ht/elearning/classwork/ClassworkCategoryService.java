@@ -4,6 +4,7 @@ import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.classwork.dtos.CreateClassworkCategoryDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkCategoryDto;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.processor.ClassroomUpdateType;
 import com.ht.elearning.processor.NotificationProcessor;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class ClassworkCategoryService {
     public ClassworkCategory create(CreateClassworkCategoryDto createClassworkCategoryDto, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
         var isProvider = classroomService.isProvider(classroom, userId);
-        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
+        if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
 
         var category = ClassworkCategory.builder()
                 .name(createClassworkCategoryDto.getName())
@@ -40,10 +41,10 @@ public class ClassworkCategoryService {
     public ClassworkCategory update(UpdateClassworkCategoryDto updateClassworkCategoryDto, String categoryId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
         var isProvider = classroomService.isProvider(classroom, userId);
-        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
+        if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
 
         var category = classworkCategoryRepository.findById(categoryId)
-                .orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.CATEGORY_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         Optional.ofNullable(updateClassworkCategoryDto.getName()).ifPresent(category::setName);
 
@@ -56,10 +57,10 @@ public class ClassworkCategoryService {
     public boolean deleteById(String categoryId, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
         var isProvider = classroomService.isProvider(classroom, userId);
-        if (!isProvider) throw new HttpException("You are not provider of this class", HttpStatus.FORBIDDEN);
-        
+        if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
+
         var category = classworkCategoryRepository.findById(categoryId)
-                .orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.CATEGORY_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         classworkCategoryRepository.delete(category);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.CLASSWORK);
@@ -69,18 +70,20 @@ public class ClassworkCategoryService {
 
     public List<ClassworkCategory> findAllByClassroomId(String classroomId, String userId) {
         var isMember = classroomService.isMember(classroomId, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        if (!isMember) throw new HttpException(ErrorMessage.USER_IS_NOT_MEMBER, HttpStatus.FORBIDDEN);
 
         return classworkCategoryRepository.findAllByClassroomId(classroomId);
     }
 
 
     public ClassworkCategory findById(String categoryId) {
-        return classworkCategoryRepository.findById(categoryId).orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
+        return classworkCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new HttpException(ErrorMessage.CATEGORY_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 
 
     public ClassworkCategory findByIdAndClassroomId(String categoryId, String classroomId) {
-        return classworkCategoryRepository.findByIdAndClassroomId(categoryId, classroomId).orElseThrow(() -> new HttpException("Category not found", HttpStatus.BAD_REQUEST));
+        return classworkCategoryRepository.findByIdAndClassroomId(categoryId, classroomId)
+                .orElseThrow(() -> new HttpException(ErrorMessage.CATEGORY_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 }

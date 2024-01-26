@@ -1,6 +1,7 @@
 package com.ht.elearning.post.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +20,7 @@ public class UpdatePostDto {
     @JsonProperty("file_ids")
     private Set<String> fileIds;
 
-    @NotEmpty(message = "Classroom id must not be empty")
+    @NotEmpty(message = ValidationMessage.CLASSROOM_ID_NOT_EMPTY)
     @JsonProperty("classroom_id")
     private String classroomId;
 }

@@ -1,6 +1,7 @@
 package com.ht.elearning.push_notification;
 
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import com.ht.elearning.push_notification.dtos.RegisterTokenDto;
 import com.ht.elearning.push_notification.dtos.RemoveTokenDto;
 import jakarta.validation.Valid;
@@ -29,7 +30,7 @@ public class PushNotificationController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created token successfully",
+                        ResponseMessage.TOKEN_CREATED,
                         true,
                         token
                 )
@@ -43,7 +44,7 @@ public class PushNotificationController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Removed token",
+                        ResponseMessage.TOKEN_REMOVED,
                         true,
                         token
                 )

@@ -3,6 +3,7 @@ package com.ht.elearning.auth;
 import com.ht.elearning.auth.dtos.*;
 import com.ht.elearning.auth.dtos.ResendAccountVerificationDto;
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,7 @@ public class AuthController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Registered successfully. Please check your email to verify your registration",
+                        ResponseMessage.REGISTERED,
                         true,
                         authenticationResponse
                 )
@@ -40,7 +41,7 @@ public class AuthController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Authenticated successfully",
+                        ResponseMessage.AUTHENTICATED,
                         true,
                         authenticationResponse
                 )
@@ -54,7 +55,7 @@ public class AuthController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Authenticated successfully",
+                        ResponseMessage.AUTHENTICATED,
                         true,
                         authenticationResponse
                 )
@@ -68,7 +69,7 @@ public class AuthController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Your account has verified successfully",
+                        ResponseMessage.VERIFIED,
                         true,
                         authenticationResponse
                 )
@@ -82,7 +83,7 @@ public class AuthController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Resent successfully",
+                        ResponseMessage.RESENT,
                         success,
                         null
                 )
@@ -96,7 +97,7 @@ public class AuthController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Your request is being processed",
+                        ResponseMessage.REQUESTED,
                         success,
                         null
                 )
@@ -110,7 +111,7 @@ public class AuthController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Your password has been updated",
+                        ResponseMessage.PASSWORD_UPDATED,
                         success,
                         null
                 )
@@ -124,7 +125,7 @@ public class AuthController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Refreshed successfully",
+                        ResponseMessage.REFRESHED,
                         true,
                         credentials
                 )
@@ -139,7 +140,7 @@ public class AuthController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Signed out",
+                        ResponseMessage.SIGNED_OUT,
                         success,
                         null
                 )

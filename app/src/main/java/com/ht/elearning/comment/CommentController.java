@@ -4,6 +4,7 @@ import com.ht.elearning.comment.dtos.CreateClassworkCommentDto;
 import com.ht.elearning.comment.dtos.CreatePostCommentDto;
 import com.ht.elearning.comment.dtos.UpdateCommentDto;
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,7 @@ public class CommentController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created successfully",
+                        ResponseMessage.CREATED,
                         true,
                         comment
                 )
@@ -43,7 +44,7 @@ public class CommentController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Created successfully",
+                        ResponseMessage.CREATED,
                         true,
                         comment
                 )
@@ -58,7 +59,7 @@ public class CommentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         comment
                 )
@@ -73,7 +74,7 @@ public class CommentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Deleted",
+                        ResponseMessage.DELETED,
                         success,
                         null
                 )

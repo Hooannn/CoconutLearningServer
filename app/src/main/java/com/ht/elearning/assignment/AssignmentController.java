@@ -5,6 +5,7 @@ import com.ht.elearning.assignment.dtos.CreateGradeDto;
 import com.ht.elearning.assignment.dtos.UpdateAssignmentDto;
 import com.ht.elearning.assignment.dtos.UpdateGradeDto;
 import com.ht.elearning.config.Response;
+import com.ht.elearning.constants.ResponseMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,7 +32,7 @@ public class AssignmentController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Submitted successfully",
+                        ResponseMessage.SUBMITTED,
                         true,
                         assignment
                 )
@@ -49,7 +50,7 @@ public class AssignmentController {
         return ResponseEntity.created(null).body(
                 new Response<>(
                         HttpStatus.CREATED.value(),
-                        "Graded successfully",
+                        ResponseMessage.GRADED,
                         true,
                         grade
                 )
@@ -65,7 +66,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         grade
                 )
@@ -80,7 +81,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Deleted",
+                        ResponseMessage.DELETED,
                         grade,
                         null
                 )
@@ -97,7 +98,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         assignment
                 )
@@ -113,7 +114,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Submitted successfully",
+                        ResponseMessage.SUBMITTED,
                         true,
                         assignment
                 )
@@ -129,7 +130,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Updated successfully",
+                        ResponseMessage.UPDATED,
                         true,
                         assignment
                 )
@@ -145,7 +146,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         count
                 )
@@ -161,7 +162,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         assignments
                 )
@@ -178,7 +179,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Ok",
+                        ResponseMessage.OK,
                         true,
                         assignment
                 )
@@ -194,7 +195,7 @@ public class AssignmentController {
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
-                        "Deleted",
+                        ResponseMessage.DELETED,
                         success,
                         null
                 )

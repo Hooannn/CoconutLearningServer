@@ -1,9 +1,12 @@
 package com.ht.elearning.user;
 
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.processor.AppProcessor;
 import com.ht.elearning.processor.ElasticsearchSyncProcessor;
 import com.ht.elearning.user.dtos.CreateUserDto;
+import com.ht.elearning.user.dtos.UpdatePasswordDto;
+import com.ht.elearning.user.dtos.UpdateProfileDto;
 import com.ht.elearning.user.dtos.UpdateUserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,12 +32,12 @@ public class UserService {
     }
 
     public User findById(String userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
+        return userRepository.findById(userId).orElseThrow(() -> new HttpException(ErrorMessage.USER_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 
     public boolean deleteById(String userId) {
         var exists = userRepository.existsById(userId);
-        if (!exists) throw new HttpException("User not found", HttpStatus.BAD_REQUEST);
+        if (!exists) throw new HttpException(ErrorMessage.USER_NOT_FOUND, HttpStatus.BAD_REQUEST);
         userRepository.deleteById(userId);
         return true;
     }
@@ -42,7 +45,7 @@ public class UserService {
     public User create(CreateUserDto createUserDto) {
         try {
             var exists = userRepository.existsByEmail(createUserDto.getEmail());
-            if (exists) throw new HttpException("Email is already registered", HttpStatus.BAD_REQUEST);
+            if (exists) throw new HttpException(ErrorMessage.USER_ALREADY_EXISTS, HttpStatus.BAD_REQUEST);
             var user = User.builder()
                     .lastName(createUserDto.getLastName())
                     .firstName(createUserDto.getFirstName())
@@ -69,10 +72,9 @@ public class UserService {
         }
     }
 
-
     public User update(String userId, UpdateUserDto updateUserDto) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new HttpException("User not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.USER_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
         Optional.ofNullable(updateUserDto.getAvatarUrl()).ifPresent(user::setAvatarUrl);
         Optional.ofNullable(updateUserDto.getPassword()).ifPresent(password -> user.setPassword(passwordEncoder.encode(password)));
@@ -85,14 +87,40 @@ public class UserService {
         return user;
     }
 
-
     public List<User> findAll() {
         return userRepository.findAll();
     }
 
-
     public void syncToElasticsearch() {
         var users = userRepository.findAll();
         elasticsearchSyncProcessor.indexUsers(users);
+    }
+
+    public User updateProfile(UpdateProfileDto updateProfileDto, String userId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new HttpException(ErrorMessage.USER_NOT_FOUND, HttpStatus.BAD_REQUEST));
+
+        Optional.ofNullable(updateProfileDto.getAvatarUrl()).ifPresent(user::setAvatarUrl);
+        Optional.ofNullable(updateProfileDto.getFirstName()).ifPresent(user::setFirstName);
+        Optional.ofNullable(updateProfileDto.getLastName()).ifPresent(user::setLastName);
+
+        save(user);
+
+        return user;
+    }
+
+    public User updatePassword(UpdatePasswordDto updatePasswordDto, String userId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new HttpException(ErrorMessage.USER_NOT_FOUND, HttpStatus.BAD_REQUEST));
+
+        boolean isValid = passwordEncoder.matches(updatePasswordDto.getOldPassword(), user.getPassword());
+
+        if (!isValid) throw new HttpException(ErrorMessage.INVALID_PASSWORD, HttpStatus.FORBIDDEN);
+
+        user.setPassword(passwordEncoder.encode(updatePasswordDto.getNewPassword()));
+
+        save(user);
+
+        return user;
     }
 }

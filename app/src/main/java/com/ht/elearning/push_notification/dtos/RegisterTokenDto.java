@@ -1,5 +1,6 @@
 package com.ht.elearning.push_notification.dtos;
 
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -7,10 +8,10 @@ import lombok.Data;
 
 @Data
 public class RegisterTokenDto {
-    @NotNull(message = "Platform must not be null")
+    @NotNull(message = ValidationMessage.PLATFORM_NOT_NULL)
     private Platform platform;
 
-    @NotEmpty(message = "Token must not be empty")
+    @NotEmpty(message = ValidationMessage.TOKEN_NOT_EMPTY)
     private String token;
 }
 

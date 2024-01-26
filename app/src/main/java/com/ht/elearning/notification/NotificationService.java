@@ -6,6 +6,7 @@ import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.Classwork;
 import com.ht.elearning.comment.Comment;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.invitation.InvitationType;
 import com.ht.elearning.post.Post;
@@ -223,7 +224,7 @@ public class NotificationService {
 
     public boolean mark(String notificationId, String userId) {
         var notification = notificationRepository.findByIdAndRecipientId(notificationId, userId)
-                .orElseThrow(() -> new HttpException("Notification not found", HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new HttpException(ErrorMessage.NOTIFICATION_NOT_FOUND, HttpStatus.BAD_REQUEST));
         notification.setRead(true);
         notificationRepository.save(notification);
         return true;

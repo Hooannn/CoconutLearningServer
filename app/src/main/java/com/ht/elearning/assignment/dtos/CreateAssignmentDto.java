@@ -1,6 +1,7 @@
 package com.ht.elearning.assignment.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -15,15 +16,15 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateAssignmentDto {
-    @NotEmpty(message = "Classwork id must not be empty")
+    @NotEmpty(message = ValidationMessage.CLASSWORK_ID_NOT_EMPTY)
     @JsonProperty("classwork_id")
     private String classworkId;
 
-    @NotEmpty(message = "Classroom id must not be empty")
+    @NotEmpty(message = ValidationMessage.CLASSWORK_ID_NOT_EMPTY)
     @JsonProperty("classroom_id")
     private String classroomId;
 
-    @NotNull(message = "File ids must not be null")
+    @NotNull(message = ValidationMessage.FILES_ID_NOT_NULL)
     @JsonProperty("file_ids")
     private Set<String> fileIds;
 

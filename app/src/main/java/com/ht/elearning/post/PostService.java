@@ -2,6 +2,7 @@ package com.ht.elearning.post;
 
 import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.config.HttpException;
+import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.file.FileRepository;
 import com.ht.elearning.file.FileService;
 import com.ht.elearning.post.dtos.CreatePostDto;
@@ -29,14 +30,14 @@ public class PostService {
 
 
     public Post findById(String id) {
-        return postRepository.findById(id).orElseThrow(() -> new HttpException("Post not found", HttpStatus.BAD_REQUEST));
+        return postRepository.findById(id).orElseThrow(() -> new HttpException(ErrorMessage.POST_NOT_FOUND, HttpStatus.BAD_REQUEST));
     }
 
 
     public Post create(CreatePostDto createPostDto, String authorId) {
         var classroom = classroomService.findById(createPostDto.getClassroomId());
         var isMember = classroomService.isMember(classroom, authorId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        if (!isMember) throw new HttpException(ErrorMessage.USER_IS_NOT_MEMBER, HttpStatus.FORBIDDEN);
 
         var author = userService.findById(authorId);
         var files = fileService.findAllById(createPostDto.getFileIds());
@@ -57,7 +58,8 @@ public class PostService {
 
     public Post update(UpdatePostDto updatePostDto, String postId, String authorId) {
         var classroom = classroomService.findById(updatePostDto.getClassroomId());
-        var post = postRepository.findByIdAndAuthorId(postId, authorId).orElseThrow(() -> new HttpException("Post not found", HttpStatus.BAD_REQUEST));
+        var post = postRepository.findByIdAndAuthorId(postId, authorId)
+                .orElseThrow(() -> new HttpException(ErrorMessage.POST_NOT_FOUND, HttpStatus.BAD_REQUEST));
         Optional.ofNullable(updatePostDto.getBody()).ifPresent(post::setBody);
         Optional.ofNullable(updatePostDto.getFileIds()).ifPresent(fileIds -> {
             var files = fileService.findAllById(fileIds);
@@ -71,7 +73,8 @@ public class PostService {
 
     public boolean delete(String postId, String classroomId, String authorId) {
         var classroom = classroomService.findById(classroomId);
-        var post = postRepository.findByIdAndAuthorId(postId, authorId).orElseThrow(() -> new HttpException("Post not found", HttpStatus.BAD_REQUEST));
+        var post = postRepository.findByIdAndAuthorId(postId, authorId)
+                .orElseThrow(() -> new HttpException(ErrorMessage.POST_NOT_FOUND, HttpStatus.BAD_REQUEST));
         postRepository.delete(post);
         notificationProcessor.classroomDidUpdate(classroom, ClassroomUpdateType.POST);
         return true;
@@ -80,7 +83,7 @@ public class PostService {
 
     public List<Post> findByClassroomId(String classId, String userId) {
         var isMember = classroomService.isMember(classId, userId);
-        if (!isMember) throw new HttpException("You are not member of this class", HttpStatus.FORBIDDEN);
+        if (!isMember) throw new HttpException(ErrorMessage.USER_IS_NOT_MEMBER, HttpStatus.FORBIDDEN);
 
         return postRepository.findByClassroomId(classId);
     }

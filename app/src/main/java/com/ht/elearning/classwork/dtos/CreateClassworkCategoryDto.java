@@ -1,5 +1,6 @@
 package com.ht.elearning.classwork.dtos;
 
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,6 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateClassworkCategoryDto {
-    @NotEmpty(message = "Name must not be empty")
+    @NotEmpty(message = ValidationMessage.NAME_NOT_EMPTY)
     private String name;
 }

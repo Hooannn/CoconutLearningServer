@@ -1,6 +1,7 @@
 package com.ht.elearning.post.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -15,14 +16,14 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreatePostDto {
-    @NotEmpty(message = "Body must not be empty")
+    @NotEmpty(message = ValidationMessage.BODY_NOT_EMPTY)
     private String body;
 
-    @NotEmpty(message = "Classroom id must not be empty")
+    @NotEmpty(message = ValidationMessage.CLASSROOM_ID_NOT_EMPTY)
     @JsonProperty("classroom_id")
     private String classroomId;
 
-    @NotNull(message = "File ids must not be null")
+    @NotNull(message = ValidationMessage.FILES_ID_NOT_NULL)
     @JsonProperty("file_ids")
     private Set<String> fileIds;
 }

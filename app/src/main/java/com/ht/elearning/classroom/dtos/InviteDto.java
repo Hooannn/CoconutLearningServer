@@ -1,6 +1,7 @@
 package com.ht.elearning.classroom.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.constants.ValidationMessage;
 import com.ht.elearning.invitation.InvitationType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -15,14 +16,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class InviteDto {
-    @NotEmpty(message = "Email must not be empty")
-    @Email(message = "Email must be valid")
+    @NotEmpty(message = ValidationMessage.EMAIL_NOT_EMPTY)
+    @Email(message = ValidationMessage.EMAIL_VALID)
     private String email;
 
     @JsonProperty("class_id")
-    @NotEmpty(message = "Class id must not be empty")
+    @NotEmpty(message = ValidationMessage.CLASS_ID_NOT_EMPTY)
     private String classId;
 
-    @NotNull(message = "Type must not be null")
+    @NotNull(message = ValidationMessage.TYPE_NOT_NULL)
     private InvitationType type;
 }

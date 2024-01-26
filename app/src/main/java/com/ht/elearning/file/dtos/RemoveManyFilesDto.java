@@ -1,6 +1,7 @@
 package com.ht.elearning.file.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RemoveManyFilesDto {
-    @NotEmpty(message = "File ids must not be empty")
+    @NotEmpty(message = ValidationMessage.FILES_ID_NOT_EMPTY)
     @JsonProperty("file_ids")
     private Set<String> fileIds;
 }

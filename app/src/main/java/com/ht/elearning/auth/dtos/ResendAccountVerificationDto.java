@@ -1,5 +1,6 @@
 package com.ht.elearning.auth.dtos;
 
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResendAccountVerificationDto {
-    @NotEmpty(message = "Email must not be empty")
-    @Email(message = "Email must be valid")
+    @NotEmpty(message = ValidationMessage.EMAIL_NOT_EMPTY)
+    @Email(message = ValidationMessage.EMAIL_VALID)
     private String email;
 }

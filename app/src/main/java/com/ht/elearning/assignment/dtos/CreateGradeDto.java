@@ -1,5 +1,6 @@
 package com.ht.elearning.assignment.dtos;
 
+import com.ht.elearning.constants.ValidationMessage;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateGradeDto {
-    @NotNull(message = "Grade must not be null")
+    @NotNull(message = ValidationMessage.GRADE_NOT_NULL)
     private double grade;
 
     private String comment;
