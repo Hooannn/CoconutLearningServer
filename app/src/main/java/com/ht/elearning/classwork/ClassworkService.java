@@ -1,5 +1,6 @@
 package com.ht.elearning.classwork;
 
+import com.ht.elearning.assignment.Assignment;
 import com.ht.elearning.classroom.ClassroomService;
 import com.ht.elearning.classwork.dtos.CreateClassworkDto;
 import com.ht.elearning.classwork.dtos.UpdateClassworkDto;
@@ -21,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -210,5 +212,24 @@ public class ClassworkService {
         } else {
             return classworkRepository.findAllByClassroomIdAndAssigneesIdAndDeadlineBetweenOrderByDeadlineAsc(classroomId, userId, new Date(), nowPlus7Date);
         }
+    }
+
+    public List<?> findTodo(String userId) {
+        return classworkRepository.findAllByAssignmentsAuthorIdAndAssignmentsSubmittedFalseOrAssignmentsSubmittedIsNullAndTypeIs(userId, ClassworkType.EXAM, StudentClassworkView.class);
+    }
+
+    public List<StudentClassworkView> findDone(String userId) {
+        return classworkRepository.findAllByAssignmentsAuthorIdAndAssignmentsSubmittedTrueAndTypeIs(userId, ClassworkType.EXAM, StudentClassworkView.class);
+    }
+
+    public List<Classwork> findNeedReview(String userId) {
+        return classworkRepository.findAllByClassroomProvidersIdAndTypeIsOrderByDeadlineAsc(userId, ClassworkType.EXAM);
+    }
+
+    public List<Classwork> findCalendar(Date startDate, Date endDate, String userId) {
+        List<Classwork> todo = classworkRepository.findAllByAssigneesIdAndDeadlineIsBetweenAndTypeIsOrderByDeadlineAsc(userId, startDate, endDate, ClassworkType.EXAM);
+        List<Classwork> needReview = classworkRepository.findAllByClassroomProvidersIdAndDeadlineIsBetweenAndTypeIsOrderByDeadlineAsc(userId, startDate, endDate, ClassworkType.EXAM);
+        return Stream.concat(todo.stream(), needReview.stream())
+                .toList();
     }
 }

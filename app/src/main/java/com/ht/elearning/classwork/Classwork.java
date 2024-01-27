@@ -73,7 +73,6 @@ public class Classwork extends BaseEntity {
     )
     private Set<File> files;
 
-    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "classroom_id", nullable = false)
     private Classroom classroom;

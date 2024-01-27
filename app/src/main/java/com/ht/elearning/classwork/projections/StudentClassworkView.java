@@ -1,6 +1,7 @@
 package com.ht.elearning.classwork.projections;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ht.elearning.classroom.Classroom;
 import com.ht.elearning.classwork.ClassworkCategory;
 import com.ht.elearning.classwork.ClassworkType;
 import com.ht.elearning.comment.Comment;
@@ -19,6 +20,8 @@ public interface StudentClassworkView {
     String getDescription();
 
     ClassworkType getType();
+
+    Classroom getClassroom();
 
     int getScore();
 
