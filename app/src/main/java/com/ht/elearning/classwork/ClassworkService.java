@@ -43,6 +43,15 @@ public class ClassworkService {
         return classworkRepository.findAllByClassroomIdAndAssigneesId(classroomId, userId, StudentClassworkView.class);
     }
 
+    public List<?> findAllExamByClassroomId(String classroomId, String userId) {
+        var isProvider = classroomService.isProvider(classroomId, userId);
+        if (isProvider) {
+            return classworkRepository.findAllByClassroomIdAndTypeIs(classroomId, ClassworkType.EXAM);
+        }
+
+        return classworkRepository.findAllByClassroomIdAndAssigneesIdAndTypeIs(classroomId, userId, ClassworkType.EXAM, StudentClassworkView.class);
+    }
+
     public Classwork create(CreateClassworkDto createClassworkDto, String classroomId, String userId) {
         var classroom = classroomService.findById(classroomId);
         var isProvider = classroomService.isProvider(classroom, userId);
@@ -201,7 +210,7 @@ public class ClassworkService {
         return classworkRepository.existsByIdAndAssigneesId(classworkId, userId);
     }
 
-    public List<Classwork> findUpcomingClassworkByClassroomId(String classroomId, String userId, boolean forProvider) {
+    public List<?> findUpcomingClassworkByClassroomId(String classroomId, String userId, boolean forProvider) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime nowPlus7 = now.plusDays(7);
         Date nowPlus7Date = Date.from(nowPlus7.atZone(ZoneId.systemDefault()).toInstant());
@@ -210,25 +219,40 @@ public class ClassworkService {
             if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
             return classworkRepository.findAllByClassroomIdAndDeadlineBetweenOrderByDeadlineAsc(classroomId, new Date(), nowPlus7Date);
         } else {
-            return classworkRepository.findAllByClassroomIdAndAssigneesIdAndDeadlineBetweenOrderByDeadlineAsc(classroomId, userId, new Date(), nowPlus7Date);
+            return classworkRepository.findAllByClassroomIdAndAssigneesIdAndDeadlineBetweenOrderByDeadlineAsc(classroomId, userId, new Date(), nowPlus7Date, StudentClassworkView.class);
         }
     }
 
-    public List<?> findTodo(String userId) {
-        return classworkRepository.findAllByAssignmentsAuthorIdAndAssignmentsSubmittedFalseOrAssignmentsSubmittedIsNullAndTypeIs(userId, ClassworkType.EXAM, StudentClassworkView.class);
+    public List<StudentClassworkView> findTodo(String userId) {
+        return classworkRepository.findTodoClassworkByUserId(userId, StudentClassworkView.class);
     }
 
     public List<StudentClassworkView> findDone(String userId) {
-        return classworkRepository.findAllByAssignmentsAuthorIdAndAssignmentsSubmittedTrueAndTypeIs(userId, ClassworkType.EXAM, StudentClassworkView.class);
+        return classworkRepository.findAllByAssignmentsAuthorIdAndAssignmentsSubmittedTrueOrAssignmentsAuthorIdAndAssignmentsGradeIsNotNullAndTypeIs(
+                userId,
+                userId,
+                ClassworkType.EXAM,
+                StudentClassworkView.class);
     }
 
     public List<Classwork> findNeedReview(String userId) {
-        return classworkRepository.findAllByClassroomProvidersIdAndTypeIsOrderByDeadlineAsc(userId, ClassworkType.EXAM);
+        return classworkRepository.findAllByClassroomProvidersIdOrClassroomOwnerIdAndTypeIsOrderByDeadlineAsc(userId, userId, ClassworkType.EXAM);
     }
 
-    public List<Classwork> findCalendar(Date startDate, Date endDate, String userId) {
-        List<Classwork> todo = classworkRepository.findAllByAssigneesIdAndDeadlineIsBetweenAndTypeIsOrderByDeadlineAsc(userId, startDate, endDate, ClassworkType.EXAM);
-        List<Classwork> needReview = classworkRepository.findAllByClassroomProvidersIdAndDeadlineIsBetweenAndTypeIsOrderByDeadlineAsc(userId, startDate, endDate, ClassworkType.EXAM);
+    public List<?> findCalendar(Date startDate, Date endDate, String userId) {
+        List<StudentClassworkView> todo = classworkRepository.findTodoClassworkByUserIdAndBetween(
+                userId, startDate, endDate, StudentClassworkView.class);
+        List<Classwork> needReview = classworkRepository.findAllByClassroomProvidersIdOrClassroomOwnerIdAndDeadlineIsBetweenAndTypeIsOrderByDeadlineAsc(userId, userId, startDate, endDate, ClassworkType.EXAM);
+        return Stream.concat(todo.stream(), needReview.stream())
+                .toList();
+    }
+
+    public List<?> findCalendarByClassroomId(String classroomId, Date startDate, Date endDate, String userId) {
+        var isMember = classroomService.isMember(classroomId, userId);
+        if (!isMember) throw new HttpException(ErrorMessage.USER_IS_NOT_MEMBER, HttpStatus.FORBIDDEN);
+        List<StudentClassworkView> todo = classworkRepository.findTodoClassworkByUserIdAndBetweenAndClassroomId(
+                userId, startDate, endDate, classroomId, StudentClassworkView.class);
+        List<Classwork> needReview = classworkRepository.findAllByClassroomProvidersIdOrClassroomOwnerIdAndDeadlineIsBetweenAndTypeIsAndClassroomIdOrderByDeadlineAsc(userId, userId, startDate, endDate, ClassworkType.EXAM, classroomId);
         return Stream.concat(todo.stream(), needReview.stream())
                 .toList();
     }

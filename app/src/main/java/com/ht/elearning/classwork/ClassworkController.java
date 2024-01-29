@@ -9,6 +9,7 @@ import com.ht.elearning.config.Response;
 import com.ht.elearning.constants.ResponseMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,7 +29,7 @@ public class ClassworkController {
     private final ClassworkService classworkService;
 
     @GetMapping("/todo")
-    public ResponseEntity<Response<List<?>>> findTodo() {
+    public ResponseEntity<Response<List<StudentClassworkView>>> findTodo() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var classwork = classworkService.findTodo(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
@@ -42,7 +43,7 @@ public class ClassworkController {
     }
 
     @GetMapping("/done")
-    public ResponseEntity<Response<List<?>>> findDone() {
+    public ResponseEntity<Response<List<StudentClassworkView>>> findDone() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var classwork = classworkService.findDone(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
@@ -56,7 +57,7 @@ public class ClassworkController {
     }
 
     @GetMapping("/need-review")
-    public ResponseEntity<Response<List<?>>> findNeedReview() {
+    public ResponseEntity<Response<List<Classwork>>> findNeedReview() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var classwork = classworkService.findNeedReview(authentication.getPrincipal().toString());
         return ResponseEntity.ok(
@@ -71,11 +72,29 @@ public class ClassworkController {
 
     @GetMapping("/calendar")
     public ResponseEntity<Response<List<?>>> findCalendar(
-            @RequestParam Date startDate,
-            @RequestParam Date endDate
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX") Date startDate,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX") Date endDate
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var classwork = classworkService.findCalendar(startDate, endDate, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        ResponseMessage.OK,
+                        true,
+                        classwork
+                )
+        );
+    }
+
+    @GetMapping("/{classroomId}/calendar")
+    public ResponseEntity<Response<List<?>>> findCalendarByClassroomId(
+            @PathVariable String classroomId,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX") Date startDate,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX") Date endDate
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classwork = classworkService.findCalendarByClassroomId(classroomId, startDate, endDate, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -103,7 +122,7 @@ public class ClassworkController {
     }
 
     @GetMapping("/{classroomId}/upcoming/provider")
-    public ResponseEntity<Response<List<Classwork>>> findUpcomingClassworkByClassroomIdForProvider(
+    public ResponseEntity<Response<List<?>>> findUpcomingClassworkByClassroomIdForProvider(
             @PathVariable String classroomId
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -119,7 +138,7 @@ public class ClassworkController {
     }
 
     @GetMapping("/{classroomId}/upcoming/student")
-    public ResponseEntity<Response<List<Classwork>>> findUpcomingClassworkByClassroomIdForStudent(
+    public ResponseEntity<Response<List<?>>> findUpcomingClassworkByClassroomIdForStudent(
             @PathVariable String classroomId
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -188,6 +207,22 @@ public class ClassworkController {
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var classwork = classworkService.findAllByClassroomId(classroomId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                new Response<>(
+                        HttpStatus.OK.value(),
+                        ResponseMessage.OK,
+                        true,
+                        classwork
+                )
+        );
+    }
+
+    @GetMapping("/{classroomId}/exam")
+    public ResponseEntity<Response<List<?>>> findAllExamByClassroomId(
+            @PathVariable String classroomId
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var classwork = classworkService.findAllExamByClassroomId(classroomId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
