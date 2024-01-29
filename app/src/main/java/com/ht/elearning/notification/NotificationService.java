@@ -9,6 +9,7 @@ import com.ht.elearning.config.HttpException;
 import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.invitation.InvitationType;
+import com.ht.elearning.meeting.Meeting;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
 import com.ht.elearning.utils.QueryPair;
@@ -265,5 +266,23 @@ public class NotificationService {
                 .build();
 
         return notificationRepository.save(notification);
+    }
+
+    public List<Notification> createMeetingDidCreateNotifications(List<User> recipients, Meeting savedMeeting) {
+        var classroom = savedMeeting.getClassroom();
+        var author = savedMeeting.getCreatedBy();
+        var urlString = "/classroom/" + classroom.getId() + "?tab=meeting";
+
+        List<Notification> notifications = recipients.stream().map(
+                recipient -> Notification.builder()
+                        .title("Classroom: '" + classroom.getName() + "'")
+                        .content(author.getFullName() + " scheduled new meeting: " + "\"" + savedMeeting.getName() + "\"")
+                        .redirectUrl(urlString)
+                        .recipient(recipient)
+                        .imageUrl(author.getAvatarUrl())
+                        .build()
+        ).toList();
+
+        return notificationRepository.saveAll(notifications);
     }
 }

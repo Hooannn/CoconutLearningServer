@@ -12,6 +12,7 @@ import com.ht.elearning.comment.Comment;
 import com.ht.elearning.comment.CommentRepository;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.mail.MailService;
+import com.ht.elearning.meeting.Meeting;
 import com.ht.elearning.notification.NotificationService;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.push_notification.PushNotificationService;
@@ -525,6 +526,83 @@ public class NotificationProcessor {
         }
     }
 
+    @Async
+    public void meetingDidCreate(Meeting savedMeeting) {
+        var classroom = savedMeeting.getClassroom();
+        var author = savedMeeting.getCreatedBy();
+
+        //Create notification for all members except author
+        CompletableFuture<Void> createNotificationsFuture = CompletableFuture.runAsync(() -> {
+            List<User> recipients = classroom.getMembers().stream()
+                    .filter(r -> !r.getId().equals(author.getId()))
+                    .toList();
+
+            var notifications = notificationService.createMeetingDidCreateNotifications(recipients, savedMeeting);
+            var notification = notifications.get(0);
+            var recipientIds = recipients.stream().map(User::getId).toList();
+            notifySocket(recipientIds, "notification:created", new HashMap<>());
+
+            List<String> pushNotificationTargets = recipients.stream().filter(User::isEnabledPushNotification).map(User::getId).toList();
+            try {
+                var batchResponse = pushNotificationService.push(
+                        pushNotificationTargets,
+                        Notification.builder()
+                                .setBody(notification.getContent())
+                                .setTitle(notification.getTitle())
+                                .setImage(notification.getImageUrl())
+                                .build(),
+                        new HashMap<>()
+                );
+                logger.debug(
+                        "Handle[meetingDidCreate] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                        batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+                );
+            } catch (Exception e) {
+                logger.warn(
+                        "Handle[meetingDidCreate] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                        pushNotificationTargets, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                );
+            }
+        });
+
+        //Just send mail for students
+        CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
+            var members = classroom.getMembers();
+            String mailSubject = "Coconut - Classroom: " + classroom.getName();
+
+            List<User> sendMailTargets = members.stream().filter(User::isEnabledEmailNotification).toList();
+
+            sendMailTargets.forEach(assignee -> {
+                try {
+                    mailService.sendNewMeetingMail(assignee.getEmail(), mailSubject, savedMeeting);
+                } catch (MessagingException e) {
+                    logger.warn(
+                            "Handle[meetingDidCreate] - Catch exception while sending mail - To[{}] - Subject[{}] - MeetingId[{}]",
+                            assignee.getEmail(), mailSubject, savedMeeting.getId()
+                    );
+                }
+            });
+        });
+
+        //Create schedule for reminder
+        CompletableFuture<Void> createSchedulesFuture = CompletableFuture.runAsync(() -> {
+            var startAt = savedMeeting.getStartAt();
+            var members = classroom.getMembers();
+            Date scheduledTime = new Date(startAt.getTime() - 24 * 60 * 60 * 1000);
+
+            // Don't create schedules if scheduled time is today
+            if (Helper.isSameDay(scheduledTime, new Date())) return;
+
+            //Todo: Implement createMany for meetingScheduleService
+            meetingScheduleService.createMany(savedMeeting, members, scheduledTime);
+        });
+
+        CompletableFuture.allOf(createNotificationsFuture, sendMailFuture, createSchedulesFuture).join();
+    }
+
+    @Async
+    public void meetingDidUpdate(Meeting savedMeeting) {
+    }
 
     private void notifySocket(List<String> memberIds, String event, HashMap<String, String> eventData) {
         socketIOServer.getNamespace("/notification")

@@ -1,6 +1,7 @@
 package com.ht.elearning.mail;
 
 import com.ht.elearning.classwork.Classwork;
+import com.ht.elearning.meeting.Meeting;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -151,6 +152,23 @@ public class MailService {
         context.setVariable("classworkLink", clientWebUrl + "/classroom/" + classwork.getClassroom().getId() + "/classwork/" + classwork.getId());
 
         String htmlContent = templateEngine.process("classwork-reminder", context);
+
+        helper.setFrom("support@coconut.online");
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true);
+
+        javaMailSender.send(mimeMessage);
+    }
+
+    public void sendNewMeetingMail(String to, String subject, Meeting savedMeeting) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+        Context context = new Context();
+        context.setVariable("className", savedMeeting.getClassroom().getName());
+        context.setVariable("meetingName", savedMeeting.getName());
+
+        String htmlContent = templateEngine.process("new-meeting", context);
 
         helper.setFrom("support@coconut.online");
         helper.setTo(to);

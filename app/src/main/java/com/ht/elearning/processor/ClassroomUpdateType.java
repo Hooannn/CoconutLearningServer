@@ -1,5 +1,5 @@
 package com.ht.elearning.processor;
 
 public enum ClassroomUpdateType {
-    CLASSROOM, CLASSWORK, POST, COMMENT, MEMBER, ASSIGNMENT
+    CLASSROOM, CLASSWORK, POST, COMMENT, MEMBER, ASSIGNMENT, MEETING;
 }

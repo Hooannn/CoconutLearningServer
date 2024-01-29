@@ -32,4 +32,6 @@ public class ValidationMessage {
     public static final String INVALID_ROLE = "Invalid role, just 'PROVIDER' or 'USER' accepted";
     public static final String OLD_PASSWORD_NOT_NULL = "Old password must not be null";
     public static final String NEW_PASSWORD_NOT_NULL = "New password must not be null";
+    public static final String START_TIME_NOT_NULL = "Start time must not be null";
+    public static final String END_TIME_NOT_NULL = "End time must not be null";
 }

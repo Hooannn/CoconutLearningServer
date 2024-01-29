@@ -29,6 +29,10 @@ public class ErrorMessage {
     public static final String NOTIFICATION_NOT_FOUND = "Notification not found";
     public static final String POST_NOT_FOUND = "Post not found";
     public static final String TOKEN_NOT_FOUND = "Token not found";
+    public static final String MEETING_TIME_IS_INVALID = "Meeting time is invalid";
+    public static final String MEETING_TIME_IS_CONFLICT = "Meeting time is conflict";
+    public static final String MEETING_NOT_FOUND = "Meeting not found";
+    public static final String MEETING_ENDED_OR_NOT_START = "Meeting ended or does not start";
 
     public static String invalidGrade(int maxScore) {
         return "Grade must be between 0 and " + maxScore;
