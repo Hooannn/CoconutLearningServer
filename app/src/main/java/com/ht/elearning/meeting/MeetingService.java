@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @RequiredArgsConstructor
@@ -53,7 +54,7 @@ public class MeetingService {
         var isProvider = classroomService.isProvider(classroomId, userId);
         if (!isProvider) throw new HttpException(ErrorMessage.USER_IS_NOT_PROVIDER, HttpStatus.FORBIDDEN);
 
-        if (createMeetingDto.getEndAt().before(new Date()) || createMeetingDto.getStartAt().before(new Date()))
+        if (createMeetingDto.getEndAt().before(new Date()))
             throw new HttpException(ErrorMessage.MEETING_TIME_IS_INVALID, HttpStatus.BAD_REQUEST);
 
         var exists = meetingRepository.existsMeetingTime(createMeetingDto.getStartAt(), createMeetingDto.getEndAt());
@@ -77,26 +78,30 @@ public class MeetingService {
         var meeting = meetingRepository.findByIdAndCreatedById(meetingId, userId)
                 .orElseThrow(() -> new HttpException(ErrorMessage.MEETING_NOT_FOUND, HttpStatus.BAD_REQUEST));
 
+        AtomicBoolean isTimeChanged = new AtomicBoolean(false);
+
         Optional.ofNullable(updateMeetingDto.getName()).ifPresent(meeting::setName);
 
         Optional.ofNullable(updateMeetingDto.getStartAt()).ifPresent(d -> {
-            if (d.before(new Date()))
-                throw new HttpException(ErrorMessage.MEETING_TIME_IS_INVALID, HttpStatus.BAD_REQUEST);
+            isTimeChanged.set(true);
             meeting.setStartAt(d);
         });
 
         Optional.ofNullable(updateMeetingDto.getEndAt()).ifPresent(d -> {
             if (d.before(new Date()))
                 throw new HttpException(ErrorMessage.MEETING_TIME_IS_INVALID, HttpStatus.BAD_REQUEST);
+            isTimeChanged.set(true);
             meeting.setEndAt(d);
         });
 
-        var exists = meetingRepository.existsMeetingTime(updateMeetingDto.getStartAt(), updateMeetingDto.getEndAt());
+        var exists = meetingRepository.existsMeetingTime(updateMeetingDto.getStartAt(), updateMeetingDto.getEndAt(), meeting.getId());
+
         if (exists) throw new HttpException(ErrorMessage.MEETING_TIME_IS_CONFLICT, HttpStatus.CONFLICT);
 
         var savedMeeting = meetingRepository.save(meeting);
 
-        notificationProcessor.meetingDidUpdate(savedMeeting);
+        if (isTimeChanged.get()) notificationProcessor.meetingTimeDidUpdate(savedMeeting);
+
         notificationProcessor.classroomDidUpdate(savedMeeting.getClassroom(), ClassroomUpdateType.MEETING);
 
         return savedMeeting;
@@ -114,7 +119,7 @@ public class MeetingService {
     public List<Meeting> findAllByClassroomId(String classroomId, String userId) {
         var isMember = classroomService.isMember(classroomId, userId);
         if (!isMember) throw new HttpException(ErrorMessage.USER_IS_NOT_MEMBER, HttpStatus.FORBIDDEN);
-        return meetingRepository.findAllByClassroomId(classroomId);
+        return meetingRepository.findAllByClassroomIdAndEndAtAfterOrderByStartAtAsc(classroomId, new Date());
     }
 
     public String generateMeetingToken(String meetingId, String userId) {

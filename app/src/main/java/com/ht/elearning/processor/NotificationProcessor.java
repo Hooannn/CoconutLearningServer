@@ -13,6 +13,7 @@ import com.ht.elearning.comment.CommentRepository;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.mail.MailService;
 import com.ht.elearning.meeting.Meeting;
+import com.ht.elearning.meeting.MeetingScheduleService;
 import com.ht.elearning.notification.NotificationService;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.push_notification.PushNotificationService;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -47,6 +49,7 @@ public class NotificationProcessor {
     private final SocketIOServer socketIOServer;
     private final UserRepository userRepository;
     private final AssignmentScheduleService assignmentScheduleService;
+    private final MeetingScheduleService meetingScheduleService;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
     @Value("${client.web.url}")
@@ -54,124 +57,97 @@ public class NotificationProcessor {
 
     @Async
     public void invitationDidCreate(Invitation invitation, Classroom classroom) {
-        var urlString = clientWebUrl + "/classroom/invitation?invite_code=" + classroom.getInviteCode();
-        URL acceptUrl = null;
         var user = userRepository.findByEmail(invitation.getEmail()).orElse(null);
-        try {
-            acceptUrl = new URI(urlString).toURL();
+        CompletableFuture<Void> createNotificationFuture = CompletableFuture.runAsync(() -> {
+            if (user != null) {
+                var notification = notificationService.createClassroomInvitation(user, classroom, invitation);
+                var target = user.getId();
+                HashMap<String, String> eventData = new HashMap<>();
+                eventData.put("notification_id", notification.getId());
+                notifySocket(target, "notification:created", eventData);
 
-            CompletableFuture<Void> createNotificationFuture = CompletableFuture.runAsync(() -> {
-                if (user != null) {
-                    var notification = notificationService.createClassroomInvitation(user, classroom, invitation);
-                    var target = user.getId();
-                    HashMap<String, String> eventData = new HashMap<>();
-                    eventData.put("notification_id", notification.getId());
-                    notifySocket(target, "notification:created", eventData);
-
-                    if (!user.isEnabledPushNotification()) return;
-                    try {
-                        var batchResponse = pushNotificationService.push(
-                                target,
-                                Notification.builder()
-                                        .setBody(notification.getContent())
-                                        .setTitle(notification.getTitle())
-                                        .setImage(notification.getImageUrl())
-                                        .build(),
-                                new HashMap<>()
-                        );
-                        logger.debug(
-                                "Handle[processClassroomInvitation] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
-                                batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
-                        );
-                    } catch (Exception e) {
-                        logger.warn(
-                                "Handle[processClassroomInvitation] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                                target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
-                        );
-                    }
-                }
-            });
-
-            URL finalAcceptUrl = acceptUrl;
-            CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
-                String mailSubject = "Coconut - Classroom invitation";
+                if (!user.isEnabledPushNotification()) return;
                 try {
-                    mailService.sendClassroomInvitationMail(invitation.getEmail(), mailSubject, finalAcceptUrl.toString());
-                } catch (MessagingException e) {
-                    logger.error(
-                            "Error while sending email - Email[{}] - Subject[{}] - Message[{}]",
-                            invitation.getEmail(),
-                            mailSubject,
-                            e.getMessage()
+                    var batchResponse = pushNotificationService.push(
+                            target,
+                            Notification.builder()
+                                    .setBody(notification.getContent())
+                                    .setTitle(notification.getTitle())
+                                    .setImage(notification.getImageUrl())
+                                    .build(),
+                            new HashMap<>()
+                    );
+                    logger.debug(
+                            "Handle[processClassroomInvitation] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                            batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+                    );
+                } catch (Exception e) {
+                    logger.warn(
+                            "Handle[processClassroomInvitation] - Catch exception while pushing notification - UserId[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                            target, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
                     );
                 }
-            });
+            }
+        });
 
-            CompletableFuture.allOf(createNotificationFuture, sendMailFuture).join();
-        } catch (MalformedURLException | URISyntaxException e) {
-            logger.error(
-                    "Error while doing processClassroomInvitation - Email[{}] - ClassroomId[{}] - Message[{}]",
-                    invitation.getEmail(),
-                    classroom.getId(),
-                    e.getMessage()
-            );
-        }
+        CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
+            String mailSubject = "Coconut - Classroom invitation";
+            try {
+                mailService.sendClassroomInvitationMail(invitation, mailSubject);
+            } catch (MessagingException e) {
+                logger.error(
+                        "Error while sending email - Email[{}] - Subject[{}] - Message[{}]",
+                        invitation.getEmail(),
+                        mailSubject,
+                        e.getMessage()
+                );
+            }
+        });
+
+        CompletableFuture.allOf(createNotificationFuture, sendMailFuture).join();
     }
 
     @Async
     public void invitationsDidCreate(List<Invitation> invitations, Classroom classroom) {
-        var urlString = clientWebUrl + "/classroom/invitation?invite_code=" + classroom.getInviteCode();
-        URL acceptUrl = null;
         var users = userRepository.findAllByEmailIn(invitations.stream().map(Invitation::getEmail).toList());
-        var emailsToSend = invitations.stream().map(Invitation::getEmail).toList();
-        try {
-            acceptUrl = new URI(urlString).toURL();
 
-            CompletableFuture<Void> createNotificationFuture = CompletableFuture.runAsync(() -> {
-                if (!users.isEmpty()) {
-                    var notifications = notificationService.createClassroomInvitations(users, classroom, invitations.get(0));
-                    var notification = notifications.get(0);
-                    var target = users.stream().map(User::getId).toList();
-                    notifySocket(target, "notification:created", new HashMap<>());
+        CompletableFuture<Void> createNotificationFuture = CompletableFuture.runAsync(() -> {
+            if (!users.isEmpty()) {
+                var notifications = notificationService.createClassroomInvitations(users, classroom, invitations.get(0));
+                var notification = notifications.get(0);
+                var target = users.stream().map(User::getId).toList();
+                notifySocket(target, "notification:created", new HashMap<>());
 
-                    List<String> pushNotificationTargets = users.stream().filter(User::isEnabledPushNotification).map(User::getId).toList();
-                    try {
-                        var batchResponse = pushNotificationService.push(
-                                pushNotificationTargets,
-                                Notification.builder()
-                                        .setBody(notification.getContent())
-                                        .setTitle(notification.getTitle())
-                                        .setImage(notification.getImageUrl())
-                                        .build(),
-                                new HashMap<>()
-                        );
-                        logger.debug(
-                                "Handle[processClassroomInvitation] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
-                                batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
-                        );
-                    } catch (Exception e) {
-                        logger.warn(
-                                "Handle[processClassroomInvitation] - Catch exception while pushing notification - UserIds[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
-                                pushNotificationTargets, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
-                        );
-                    }
+                List<String> pushNotificationTargets = users.stream().filter(User::isEnabledPushNotification).map(User::getId).toList();
+                try {
+                    var batchResponse = pushNotificationService.push(
+                            pushNotificationTargets,
+                            Notification.builder()
+                                    .setBody(notification.getContent())
+                                    .setTitle(notification.getTitle())
+                                    .setImage(notification.getImageUrl())
+                                    .build(),
+                            new HashMap<>()
+                    );
+                    logger.debug(
+                            "Handle[processClassroomInvitation] - Push batch response - SuccessCount[{}] - FailureCount[{}] - Responses[{}]",
+                            batchResponse.getSuccessCount(), batchResponse.getFailureCount(), batchResponse.getResponses()
+                    );
+                } catch (Exception e) {
+                    logger.warn(
+                            "Handle[processClassroomInvitation] - Catch exception while pushing notification - UserIds[{}] - Title[{}] - Body[{}] - ImageUrl[{}] - Message[{}]",
+                            pushNotificationTargets, notification.getTitle(), notification.getContent(), notification.getImageUrl(), e.getMessage()
+                    );
                 }
-            });
-            URL finalAcceptUrl = acceptUrl;
-            CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
-                String mailSubject = "Coconut - Classroom invitation";
-                mailService.sendClassroomInvitationMails(emailsToSend, mailSubject, finalAcceptUrl.toString());
-            });
+            }
+        });
 
-            CompletableFuture.allOf(createNotificationFuture, sendMailFuture).join();
-        } catch (MalformedURLException | URISyntaxException e) {
-            logger.error(
-                    "Error while doing processClassroomInvitations - Emails[{}] - ClassroomId[{}] - Message[{}]",
-                    emailsToSend,
-                    classroom.getId(),
-                    e.getMessage()
-            );
-        }
+        CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
+            String mailSubject = "Coconut - Classroom invitation";
+            mailService.sendClassroomInvitationMails(invitations, mailSubject);
+        });
+
+        CompletableFuture.allOf(createNotificationFuture, sendMailFuture).join();
     }
 
     @Async
@@ -351,7 +327,7 @@ public class NotificationProcessor {
         //Just send mail for assignees
         CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
             var assignees = savedClasswork.getAssignees();
-            String mailSubject = "Coconut - Classroom: " + savedClasswork.getClassroom().getName();
+            String mailSubject = "New classwork - Classroom: " + savedClasswork.getClassroom().getName();
 
             List<User> sendMailTargets = assignees.stream().filter(User::isEnabledEmailNotification).toList();
 
@@ -422,7 +398,7 @@ public class NotificationProcessor {
         });
 
         CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
-            String mailSubject = "Coconut - Classroom: " + savedClasswork.getClassroom().getName();
+            String mailSubject = "New classwork - Classroom: " + savedClasswork.getClassroom().getName();
             List<User> sendMailTargets = newAssignees.stream().filter(User::isEnabledEmailNotification).toList();
             sendMailTargets.forEach(assignee -> {
                 try {
@@ -568,7 +544,7 @@ public class NotificationProcessor {
         //Just send mail for students
         CompletableFuture<Void> sendMailFuture = CompletableFuture.runAsync(() -> {
             var members = classroom.getMembers();
-            String mailSubject = "Coconut - Classroom: " + classroom.getName();
+            String mailSubject = "New meeting - Classroom: " + classroom.getName();
 
             List<User> sendMailTargets = members.stream().filter(User::isEnabledEmailNotification).toList();
 
@@ -587,13 +563,14 @@ public class NotificationProcessor {
         //Create schedule for reminder
         CompletableFuture<Void> createSchedulesFuture = CompletableFuture.runAsync(() -> {
             var startAt = savedMeeting.getStartAt();
-            var members = classroom.getMembers();
+            var members = classroom.getUsers();
+            members.add(author);
+
             Date scheduledTime = new Date(startAt.getTime() - 24 * 60 * 60 * 1000);
 
             // Don't create schedules if scheduled time is today
             if (Helper.isSameDay(scheduledTime, new Date())) return;
 
-            //Todo: Implement createMany for meetingScheduleService
             meetingScheduleService.createMany(savedMeeting, members, scheduledTime);
         });
 
@@ -601,7 +578,20 @@ public class NotificationProcessor {
     }
 
     @Async
-    public void meetingDidUpdate(Meeting savedMeeting) {
+    @Transactional
+    public void meetingTimeDidUpdate(Meeting savedMeeting) {
+        meetingScheduleService.deleteAllByMeetingId(savedMeeting.getId());
+
+        Date scheduledTime = new Date(savedMeeting.getStartAt().getTime() - 24 * 60 * 60 * 1000);
+
+        var users = savedMeeting.getClassroom().getUsers();
+        users.add(savedMeeting.getCreatedBy());
+        meetingScheduleService.createMany(savedMeeting, users, scheduledTime);
+
+        //Remind if the updated meeting time is today
+        //Exp: If the old deadline is 2021-10-21 and the updated deadline is 2021-10-11 and today is 2021-10-11
+        var schedules = meetingScheduleService.findUnremindedSchedulesByMeetingIdForToday(savedMeeting.getId());
+        meetingScheduleService.remind(schedules, logger);
     }
 
     private void notifySocket(List<String> memberIds, String event, HashMap<String, String> eventData) {

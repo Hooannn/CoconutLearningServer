@@ -1,13 +1,14 @@
-package com.ht.elearning.assignment;
+package com.ht.elearning.meeting;
 
 import com.google.firebase.messaging.Notification;
-import com.ht.elearning.classwork.Classwork;
+import com.ht.elearning.assignment.AssignmentSchedule;
 import com.ht.elearning.mail.MailService;
 import com.ht.elearning.notification.NotificationService;
 import com.ht.elearning.push_notification.PushNotificationService;
 import com.ht.elearning.user.User;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -15,53 +16,39 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-import org.slf4j.Logger;
-
 @Service
 @RequiredArgsConstructor
-public class AssignmentScheduleService {
-    private final AssignmentScheduleRepository assignmentScheduleRepository;
+public class MeetingScheduleService {
+    private final MeetingScheduleRepository meetingScheduleRepository;
     private final NotificationService notificationService;
     private final MailService mailService;
     private final PushNotificationService pushNotificationService;
 
-    public List<AssignmentSchedule> createMany(Classwork classwork, Set<User> users, Date scheduledTime) {
-        var schedules = users.stream().map(u -> AssignmentSchedule.builder()
+    public List<MeetingSchedule> createMany(Meeting meeting, Set<User> users, Date scheduledTime) {
+        var schedules = users.stream().map(u -> MeetingSchedule.builder()
                 .scheduledTime(scheduledTime)
                 .user(u)
-                .classwork(classwork)
+                .meeting(meeting)
                 .build()
         ).toList();
-        return assignmentScheduleRepository.saveAll(schedules);
+        return meetingScheduleRepository.saveAll(schedules);
     }
 
-    public void deleteAllByScheduledTimeBeforeOrRemindedIsTrue(Date d) {
-        assignmentScheduleRepository.deleteAllByScheduledTimeBeforeOrRemindedIsTrue(d);
-    }
-
-    public List<AssignmentSchedule> findUnremindedSchedulesForToday() {
-        return assignmentScheduleRepository.findUnremindedSchedulesForToday();
-    }
-
-    public List<AssignmentSchedule> findUnremindedSchedulesByClassworkIdForToday(String classworkId) {
-        return assignmentScheduleRepository.findUnremindedSchedulesByClassworkIdForToday(classworkId);
-    }
-
-    public void remind(List<AssignmentSchedule> schedules, Logger logger) {
+    public void remind(List<MeetingSchedule> schedules, Logger logger) {
         schedules.forEach(schedule -> remind(schedule, logger));
     }
 
-    public void remind(AssignmentSchedule schedule, Logger logger) {
-        logger.info("Reminding assignment ClassroomId[{}] - ClassworkId[{}] - UserId[{}]",
-                schedule.getClasswork().getClassroom().getId(),
-                schedule.getClasswork().getId(),
+    public void remind(MeetingSchedule schedule, Logger logger) {
+        logger.info("Reminding assignment ClassroomId[{}] - MeetingId[{}] - UserId[{}]",
+                schedule.getMeeting().getClassroom().getId(),
+                schedule.getMeeting().getId(),
                 schedule.getUser().getId());
 
-        var notification = notificationService.createAssignmentReminderNotification(schedule.getUser(), schedule);
+        var notification = notificationService.createMeetingReminderNotification(schedule.getUser(), schedule);
 
         try {
             if (schedule.getUser().isEnabledEmailNotification())
-                mailService.sendClassworkReminderMail(schedule.getUser().getEmail(), "Coconut - Classwork reminder", schedule.getClasswork());
+                mailService.sendMeetingReminderMail(schedule.getUser().getEmail(), "Coconut - Meeting reminder", schedule.getMeeting());
 
             if (schedule.getUser().isEnabledPushNotification()) {
                 var batchResponse = pushNotificationService.push(
@@ -88,10 +75,22 @@ public class AssignmentScheduleService {
         }
 
         schedule.setReminded(true);
-        assignmentScheduleRepository.save(schedule);
+        meetingScheduleRepository.save(schedule);
     }
 
-    public void deleteAllByClassworkId(String classworkId) {
-        assignmentScheduleRepository.deleteAllByClassworkId(classworkId);
+    public void deleteAllByMeetingId(String classworkId) {
+        meetingScheduleRepository.deleteAllByMeetingId(classworkId);
+    }
+
+    public void deleteAllByScheduledTimeBeforeOrRemindedIsTrue(Date d) {
+        meetingScheduleRepository.deleteAllByScheduledTimeBeforeOrRemindedIsTrue(d);
+    }
+
+    public List<MeetingSchedule> findUnremindedSchedulesForToday() {
+        return meetingScheduleRepository.findUnremindedSchedulesForToday();
+    }
+
+    public List<MeetingSchedule> findUnremindedSchedulesByMeetingIdForToday(String meetingId) {
+        return meetingScheduleRepository.findUnremindedSchedulesByMeetingIdForToday(meetingId);
     }
 }

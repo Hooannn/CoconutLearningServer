@@ -191,7 +191,7 @@ public class ClassroomController {
     }
 
     @PostMapping("/webhook/accept/{inviteCode}")
-    public ResponseEntity<Response<Classroom>> accept(@PathVariable String inviteCode, @RequestParam String notificationId) {
+    public ResponseEntity<Response<?>> accept(@PathVariable String inviteCode, @RequestParam String notificationId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var success = classroomService.accept(inviteCode, notificationId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
@@ -205,7 +205,7 @@ public class ClassroomController {
     }
 
     @PostMapping("/webhook/refuse/{inviteCode}")
-    public ResponseEntity<Response<Classroom>> refuse(@PathVariable String inviteCode, @RequestParam String notificationId) {
+    public ResponseEntity<Response<?>> refuse(@PathVariable String inviteCode, @RequestParam String notificationId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var success = classroomService.refuse(inviteCode, notificationId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
@@ -219,7 +219,7 @@ public class ClassroomController {
     }
 
     @PostMapping("/leave/{classroomId}")
-    public ResponseEntity<Response<Classroom>> leave(@PathVariable String classroomId) {
+    public ResponseEntity<Response<?>> leave(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var success = classroomService.leave(classroomId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(

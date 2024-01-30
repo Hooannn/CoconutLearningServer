@@ -14,19 +14,7 @@ public interface AssignmentScheduleRepository extends JpaRepository<AssignmentSc
     @Query(value = "select s.* from assignment_schedules s where s.reminded = false and date(s.scheduled_time) = current_date and s.classwork_id = ?1", nativeQuery = true)
     List<AssignmentSchedule> findUnremindedSchedulesByClassworkIdForToday(String classworkId);
 
-    List<AssignmentSchedule> findAllByClassworkIdAndRemindedIsFalse(String classworkId);
-
-    @Modifying
-    @Query(value = "update assignment_schedules set scheduled_time = ?1, reminded = false where classwork_id = ?2", nativeQuery = true)
-    void updateScheduledTimeByClassworkId(Date scheduledTime, String classworkId);
-
     void deleteAllByScheduledTimeBeforeOrRemindedIsTrue(Date scheduledTime);
 
-    @Modifying
-    @Query(value = "update assignment_schedules set reminded = ?1 where classwork_id = ?2", nativeQuery = true)
-    void updateRemindedByClassworkId(Boolean reminded, String classworkId);
-
     void deleteAllByClassworkId(String classworkId);
-
-    List<AssignmentSchedule> findAllByClassworkIdAndScheduledTime(String classworkId, Date scheduledTime);
 }

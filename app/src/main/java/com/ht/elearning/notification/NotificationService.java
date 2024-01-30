@@ -10,6 +10,7 @@ import com.ht.elearning.constants.ErrorMessage;
 import com.ht.elearning.invitation.Invitation;
 import com.ht.elearning.invitation.InvitationType;
 import com.ht.elearning.meeting.Meeting;
+import com.ht.elearning.meeting.MeetingSchedule;
 import com.ht.elearning.post.Post;
 import com.ht.elearning.user.User;
 import com.ht.elearning.utils.QueryPair;
@@ -259,7 +260,7 @@ public class NotificationService {
         var deadline = dateFormatter.print(classwork.getDeadline(), Locale.ENGLISH);
         Notification notification = Notification.builder()
                 .title("Classroom: '" + classroom.getName() + "'")
-                .content("You have an assignment due today.\n" + "\"" + classwork.getTitle() + "\"" + " - " + deadline)
+                .content("You have an assignment due tomorrow.\n" + "\"" + classwork.getTitle() + "\"" + " - " + deadline)
                 .redirectUrl(urlString)
                 .recipient(recipient)
                 .imageUrl(author.getAvatarUrl())
@@ -284,5 +285,24 @@ public class NotificationService {
         ).toList();
 
         return notificationRepository.saveAll(notifications);
+    }
+
+    public Notification createMeetingReminderNotification(User recipient, MeetingSchedule schedule) {
+        var meeting = schedule.getMeeting();
+        var classroom = meeting.getClassroom();
+        var author = meeting.getCreatedBy();
+        var urlString = "/classroom/" + classroom.getId() + "?tab=meeting";
+
+        DateFormatter dateFormatter = new DateFormatter("dd/MM/yyyy HH:mm");
+        var time = dateFormatter.print(meeting.getStartAt(), Locale.ENGLISH);
+        Notification notification = Notification.builder()
+                .title("Classroom: '" + classroom.getName() + "'")
+                .content("You have an meeting tomorrow.\n" + "\"" + meeting.getName() + "\"" + " - " + time)
+                .redirectUrl(urlString)
+                .recipient(recipient)
+                .imageUrl(author.getAvatarUrl())
+                .build();
+
+        return notificationRepository.save(notification);
     }
 }

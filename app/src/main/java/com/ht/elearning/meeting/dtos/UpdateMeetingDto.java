@@ -1,5 +1,6 @@
 package com.ht.elearning.meeting.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,10 @@ import java.util.Date;
 @AllArgsConstructor
 public class UpdateMeetingDto {
     private String name;
+
+    @JsonProperty("start_at")
     private Date startAt;
+    
+    @JsonProperty("end_at")
     private Date endAt;
 }
