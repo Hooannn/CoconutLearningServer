@@ -41,5 +41,3 @@ ehthumbs.db
 ### VS Code ###
 .vscode/
 serviceAccountKey.json
-
-*.pk
