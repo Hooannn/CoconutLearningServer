@@ -22,20 +22,6 @@ import java.util.List;
 public class MeetingController {
     private final MeetingService meetingService;
 
-    @GetMapping(path = "/token/test")
-    public ResponseEntity<Response<String>> generateTestToken() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var token = meetingService.generateTestToken(authentication.getPrincipal().toString());
-        return ResponseEntity.ok(
-                Response.<String>builder()
-                        .status(HttpStatus.OK.value())
-                        .message(ResponseMessage.OK)
-                        .data(token)
-                        .success(true)
-                        .build()
-        );
-    }
-
     @GetMapping("/token/{meetingId}")
     public ResponseEntity<Response<String>> generateMeetingToken(@PathVariable String meetingId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -66,6 +52,19 @@ public class MeetingController {
     public ResponseEntity<Response<List<Meeting>>> findAllByClassroomId(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var meetings = meetingService.findAllByClassroomId(classroomId, authentication.getPrincipal().toString());
+        return ResponseEntity.ok(
+                Response.<List<Meeting>>builder()
+                        .status(HttpStatus.OK.value())
+                        .message(ResponseMessage.OK)
+                        .data(meetings)
+                        .success(true)
+                        .build());
+    }
+
+    @GetMapping("/classroom/{classroomId}/upcoming")
+    public ResponseEntity<Response<List<Meeting>>> findUpcomingByClassroomId(@PathVariable String classroomId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var meetings = meetingService.findUpcomingByClassroomId(classroomId, authentication.getPrincipal().toString());
         return ResponseEntity.ok(
                 Response.<List<Meeting>>builder()
                         .status(HttpStatus.OK.value())

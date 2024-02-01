@@ -122,11 +122,11 @@ public class ClassworkController {
     }
 
     @GetMapping("/{classroomId}/upcoming/provider")
-    public ResponseEntity<Response<List<?>>> findUpcomingClassworkByClassroomIdForProvider(
+    public ResponseEntity<Response<List<?>>> findUpcomingByClassroomIdForProvider(
             @PathVariable String classroomId
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classwork = classworkService.findUpcomingClassworkByClassroomId(classroomId, authentication.getPrincipal().toString(), true);
+        var classwork = classworkService.findUpcomingByClassroomId(classroomId, authentication.getPrincipal().toString(), true);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
@@ -138,11 +138,11 @@ public class ClassworkController {
     }
 
     @GetMapping("/{classroomId}/upcoming/student")
-    public ResponseEntity<Response<List<?>>> findUpcomingClassworkByClassroomIdForStudent(
+    public ResponseEntity<Response<List<?>>> findUpcomingByClassroomIdForStudent(
             @PathVariable String classroomId
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var classwork = classworkService.findUpcomingClassworkByClassroomId(classroomId, authentication.getPrincipal().toString(), false);
+        var classwork = classworkService.findUpcomingByClassroomId(classroomId, authentication.getPrincipal().toString(), false);
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),

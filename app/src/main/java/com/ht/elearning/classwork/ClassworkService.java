@@ -210,7 +210,7 @@ public class ClassworkService {
         return classworkRepository.existsByIdAndAssigneesId(classworkId, userId);
     }
 
-    public List<?> findUpcomingClassworkByClassroomId(String classroomId, String userId, boolean forProvider) {
+    public List<?> findUpcomingByClassroomId(String classroomId, String userId, boolean forProvider) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime nowPlus7 = now.plusDays(7);
         Date nowPlus7Date = Date.from(nowPlus7.atZone(ZoneId.systemDefault()).toInstant());

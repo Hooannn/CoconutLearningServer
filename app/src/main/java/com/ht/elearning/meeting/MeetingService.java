@@ -34,17 +34,6 @@ public class MeetingService {
     @Value("${jitsi.publicKey}")
     private String publicKey;
 
-    // Generate test token for testing purpose
-    public String generateTestToken(String userId) {
-        try {
-            String secretRoom = UUID.randomUUID().toString();
-            var user = userService.findById(userId);
-            return JaaSJwtBuilder.buildJaasJwt(appId, publicKey, user, false, secretRoom, new Date(new Date().getTime() + 600000), new Date());
-        } catch (Exception e) {
-            throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
     public Meeting findById(String meetingId) {
         return meetingRepository.findById(meetingId)
                 .orElseThrow(() -> new HttpException(ErrorMessage.MEETING_NOT_FOUND, HttpStatus.BAD_REQUEST));
@@ -140,5 +129,13 @@ public class MeetingService {
         } catch (Exception e) {
             throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
+    }
+
+    public List<Meeting> findUpcomingByClassroomId(String classroomId, String userId) {
+        var isMember = classroomService.isMember(classroomId, userId);
+        if (!isMember) throw new HttpException(ErrorMessage.USER_IS_NOT_MEMBER, HttpStatus.FORBIDDEN);
+        Date now = new Date();
+        Date nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        return meetingRepository.findAllByClassroomIdAndEndAtAfterAndStartAtBeforeOrderByStartAtAsc(classroomId, now, nextWeek);
     }
 }

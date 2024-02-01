@@ -17,4 +17,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, String> {
     Optional<Meeting> findByIdAndCreatedById(String meetingId, String userId);
 
     List<Meeting> findAllByClassroomIdAndEndAtAfterOrderByStartAtAsc(String classroomId, Date date);
+
+    List<Meeting> findAllByClassroomIdAndEndAtAfterAndStartAtBeforeOrderByStartAtAsc(String classroomId, Date afterDate, Date beforeDate);
 }
