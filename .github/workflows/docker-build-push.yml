@@ -20,7 +20,7 @@ jobs:
           java-version: '17'
 
       - name: Build Spring boot application with Maven
-        run: ./app/mvnw clean package
+        run: ./app/mvnw clean package -f ./app/pom.xml
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
