@@ -57,6 +57,8 @@ public class AuthService {
                 .lastName(registerDto.getLastName())
                 .email(registerDto.getEmail())
                 .avatarUrl(defaultAvatarUrl)
+                .enabledEmailNotification(true)
+                .enabledPushNotification(true)
                 .password(passwordEncoder.encode(registerDto.getPassword()))
                 .role(Role.USER)
                 .build();

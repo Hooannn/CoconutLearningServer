@@ -51,6 +51,8 @@ public class UserService {
                     .firstName(createUserDto.getFirstName())
                     .avatarUrl(createUserDto.getAvatarUrl())
                     .email(createUserDto.getEmail())
+                    .enabledEmailNotification(true)
+                    .enabledPushNotification(true)
                     .password(passwordEncoder.encode(createUserDto.getPassword()))
                     .role(createUserDto.getRole())
                     .verified(createUserDto.isVerified())
