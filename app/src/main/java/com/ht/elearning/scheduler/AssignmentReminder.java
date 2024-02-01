@@ -15,14 +15,14 @@ public class AssignmentReminder {
     private final AssignmentScheduleService assignmentScheduleService;
 
     //Run at 00:00 and 12:00 everyday
-    @Scheduled(cron = "0 0 0,12 * * ?")
+    @Scheduled(cron = "0 5 0,12 * * ?")
     public void remind() {
         var schedules = assignmentScheduleService.findUnremindedSchedulesForToday();
         assignmentScheduleService.remind(schedules, logger);
     }
 
     //Run at 00:00 on the first day of every month
-    @Scheduled(cron = "0 0 0 1 * ?")
+    @Scheduled(cron = "0 5 0 1 * ?")
     public void clearSchedules() {
         logger.info("Clearing reminded assignment schedules or schedules that are scheduled in the past");
         assignmentScheduleService.deleteAllByScheduledTimeBeforeOrRemindedIsTrue(new java.util.Date());
