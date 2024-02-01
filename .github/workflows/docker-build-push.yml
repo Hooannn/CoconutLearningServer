@@ -31,7 +31,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./app
-          file: ./Dockerfile
+          context: .
+          file: ./app/Dockerfile
           push: true
           tags: hoanthui123/coconutserver:latest
