@@ -65,7 +65,7 @@ public class AuthServiceTest {
                 .email("khaihoan.9a9@gmail.com").firstName("John").lastName("Doe").password("12345678")
                 .build();
 
-        when(userRepository.existsByEmail(registerDto.getEmail())).thenReturn(false);
+        when(userRepository.existsByEmail(registerDto.getEmail())).thenReturn(true);
 
         assertThatThrownBy(() -> underTest.register(registerDto))
                 .isInstanceOf(HttpException.class)
