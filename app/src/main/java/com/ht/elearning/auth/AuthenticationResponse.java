@@ -1,9 +1,7 @@
 package com.ht.elearning.auth;
+
 import com.ht.elearning.user.User;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
@@ -16,6 +14,7 @@ public class AuthenticationResponse {
 }
 
 @Builder
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
 class Credentials {
