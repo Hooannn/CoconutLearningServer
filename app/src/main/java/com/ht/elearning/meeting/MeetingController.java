@@ -26,7 +26,6 @@ public class MeetingController {
     public ResponseEntity<Response<String>> generateMeetingToken(@PathVariable String meetingId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         var token = meetingService.generateMeetingToken(meetingId, authentication.getPrincipal().toString());
-        System.out.println(token);
         return ResponseEntity.ok(
                 Response.<String>builder()
                         .status(HttpStatus.OK.value())
