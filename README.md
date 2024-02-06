@@ -23,7 +23,10 @@ technologies used, CI/CD setup, and deployment process.
 
 - **File server**: Using open-source self-hosted file server [seaweedfs](https://github.com/seaweedfs/seaweedfs)
 
-- **Mail**: Using [mailgun](https://www.mailgun.com) to send mails.
+- **Notification**:
+    + For mail notifications: using [mailgun](https://www.mailgun.com).
+    + For realtime notifications: using [socket.io](https://socket.io/)
+    + For push notifications: using [Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging)
 
 - **Jitsi as a Service**: Integrate with [JaaS](https://jaas.8x8.vc/#/) for meeting feature. Embed Jitsi meeting to
   React client, manage meeting tokens in Spring boot server.
@@ -32,6 +35,7 @@ technologies used, CI/CD setup, and deployment process.
 
 - **Nginx**: In the hosted VPS, using nginx to forward all requests to suitable domains
     + https://cococlass.online: For landing page
+    + https://socket.cococlass.online: For socket.io server
     + https://classroom.cococlass.online: For React app
     + https://api.cococlass.online: For Spring boot API
     + https://file.cococlass.online: For seaweedfs file server
