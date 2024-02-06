@@ -4,24 +4,25 @@ import com.ht.elearning.config.Response;
 import com.ht.elearning.constants.ResponseMessage;
 import com.ht.elearning.meeting.dtos.CreateMeetingDto;
 import com.ht.elearning.meeting.dtos.UpdateMeetingDto;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Controller
+@RestController
 @CrossOrigin
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/v1/meeting")
 public class MeetingController {
     private final MeetingService meetingService;
 
+    @Operation(summary = "Generate a token for a meeting")
     @GetMapping("/token/{meetingId}")
     public ResponseEntity<Response<String>> generateMeetingToken(@PathVariable String meetingId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -35,6 +36,7 @@ public class MeetingController {
                         .build());
     }
 
+    @Operation(summary = "Find a meeting by its id")
     @GetMapping("{meetingId}")
     public ResponseEntity<Response<Meeting>> findById(@PathVariable String meetingId) {
         var meeting = meetingService.findById(meetingId);
@@ -47,6 +49,7 @@ public class MeetingController {
                         .build());
     }
 
+    @Operation(summary = "Find all meetings in a classroom")
     @GetMapping("/classroom/{classroomId}")
     public ResponseEntity<Response<List<Meeting>>> findAllByClassroomId(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -60,6 +63,7 @@ public class MeetingController {
                         .build());
     }
 
+    @Operation(summary = "Find all upcoming meetings in a classroom")
     @GetMapping("/classroom/{classroomId}/upcoming")
     public ResponseEntity<Response<List<Meeting>>> findUpcomingByClassroomId(@PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -73,6 +77,7 @@ public class MeetingController {
                         .build());
     }
 
+    @Operation(summary = "Create a meeting in a classroom")
     @PostMapping("{classroomId}")
     public ResponseEntity<Response<Meeting>> create(@PathVariable String classroomId, @Valid @RequestBody CreateMeetingDto createMeetingDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -87,6 +92,7 @@ public class MeetingController {
                                 .build());
     }
 
+    @Operation(summary = "Update a meeting by its id")
     @PutMapping("{meetingId}")
     public ResponseEntity<Response<Meeting>> update(
             @PathVariable String meetingId,
@@ -102,6 +108,7 @@ public class MeetingController {
                         .build());
     }
 
+    @Operation(summary = "Delete a meeting by its id")
     @DeleteMapping("{meetingId}")
     public ResponseEntity<Response<Meeting>> deleteById(@PathVariable String meetingId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

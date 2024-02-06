@@ -3,26 +3,26 @@ package com.ht.elearning.file;
 import com.ht.elearning.config.Response;
 import com.ht.elearning.constants.ResponseMessage;
 import com.ht.elearning.file.dtos.RemoveManyFilesDto;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/v1/files")
 @CrossOrigin
 public class FileController {
     private final FileService fileService;
 
-
+    @Operation(summary = "Find all files in the folder of the current user")
     @GetMapping("folder")
     public ResponseEntity<Response<List<File>>> findMyFiles() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -37,7 +37,7 @@ public class FileController {
         );
     }
 
-
+    @Operation(summary = "Upload files to the folder of the current user")
     @PostMapping("upload")
     public ResponseEntity<Response<List<File>>> upload(@RequestPart("files") List<MultipartFile> files) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -52,7 +52,7 @@ public class FileController {
         );
     }
 
-
+    @Operation(summary = "Update a file by its id")
     @PutMapping("{fileId}")
     public ResponseEntity<Response<File>> update(@RequestPart("files") List<MultipartFile> files, @PathVariable String fileId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -67,7 +67,7 @@ public class FileController {
         );
     }
 
-
+    @Operation(summary = "Delete a file by its id")
     @DeleteMapping("{fileId}")
     public ResponseEntity<Response<List<File>>> remove(@PathVariable String fileId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -82,7 +82,7 @@ public class FileController {
         );
     }
 
-
+    @Operation(summary = "Delete many files by their ids")
     @PostMapping("/remove/many")
     public ResponseEntity<Response<?>> removeMany(@Valid @RequestBody RemoveManyFilesDto removeManyFilesDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

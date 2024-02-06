@@ -5,23 +5,23 @@ import com.ht.elearning.comment.dtos.CreatePostCommentDto;
 import com.ht.elearning.comment.dtos.UpdateCommentDto;
 import com.ht.elearning.config.Response;
 import com.ht.elearning.constants.ResponseMessage;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/v1/comments")
 @CrossOrigin
 public class CommentController {
     private final CommentService commentService;
 
-
+    @Operation(summary = "Create a comment for a post")
     @PostMapping("/post")
     public ResponseEntity<Response<Comment>> create(@Valid @RequestBody CreatePostCommentDto createPostCommentDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -36,7 +36,7 @@ public class CommentController {
         );
     }
 
-
+    @Operation(summary = "Create a comment for a classwork")
     @PostMapping("/classwork")
     public ResponseEntity<Response<Comment>> create(@Valid @RequestBody CreateClassworkCommentDto createClassworkCommentDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -51,7 +51,7 @@ public class CommentController {
         );
     }
 
-
+    @Operation(summary = "Update a comment by its id")
     @PutMapping("{commentId}")
     public ResponseEntity<Response<Comment>> update(@Valid @RequestBody UpdateCommentDto updateCommentDto, @PathVariable String commentId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -66,7 +66,7 @@ public class CommentController {
         );
     }
 
-
+    @Operation(summary = "Delete a comment by its id")
     @DeleteMapping("/{classroomId}/{commentId}")
     public ResponseEntity<Response<?>> delete(@PathVariable String commentId, @PathVariable String classroomId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

@@ -4,6 +4,7 @@ import com.ht.elearning.config.Response;
 import com.ht.elearning.constants.ResponseMessage;
 import com.ht.elearning.user.dtos.CreateUserDto;
 import com.ht.elearning.user.dtos.UpdateUserDto;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService userService;
 
+    @Operation(summary = "Find a user by its id for admin only")
     @GetMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:read')")
     public ResponseEntity<Response<User>> findByUserId(@PathVariable String userId) {
@@ -36,6 +38,7 @@ public class UserController {
         );
     }
 
+    @Operation(summary = "Create a user for admin only")
     @PostMapping
     @PreAuthorize("hasAuthority('admin:create')")
     public ResponseEntity<Response<User>> create(@Valid @RequestBody CreateUserDto createUserDto) {
@@ -50,6 +53,7 @@ public class UserController {
         );
     }
 
+    @Operation(summary = "Sync users to Elasticsearch for admin only")
     @PostMapping("/es/sync")
     @PreAuthorize("hasAuthority('admin:create')")
     public ResponseEntity<Response<?>> syncToElasticsearch() {
@@ -64,6 +68,7 @@ public class UserController {
         );
     }
 
+    @Operation(summary = "Update a user by its id for admin only")
     @PatchMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:update')")
     public ResponseEntity<Response<User>> update(@PathVariable String userId, @Valid @RequestBody UpdateUserDto updateUserDto) {
@@ -78,7 +83,7 @@ public class UserController {
         );
     }
 
-
+    @Operation(summary = "Delete a user by its id for admin only")
     @DeleteMapping("{userId}")
     @PreAuthorize("hasAuthority('admin:delete')")
     public ResponseEntity<Response<String>> delete(@PathVariable String userId) {

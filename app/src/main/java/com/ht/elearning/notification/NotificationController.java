@@ -3,23 +3,23 @@ package com.ht.elearning.notification;
 import com.ht.elearning.config.QueryResponse;
 import com.ht.elearning.config.Response;
 import com.ht.elearning.constants.ResponseMessage;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "/api/v1/notifications")
 @CrossOrigin
 public class NotificationController {
     private final NotificationService notificationService;
 
-
+    @Operation(summary = "Find all notifications of the current user")
     @GetMapping("/own")
     public ResponseEntity<QueryResponse<List<Notification>>> findMyNotifications(@RequestParam(defaultValue = "0") int skip,
                                                                                  @RequestParam(defaultValue = "20") int limit) {
@@ -37,7 +37,7 @@ public class NotificationController {
         );
     }
 
-
+    @Operation(summary = "Delete all notifications of the current user")
     @DeleteMapping("/own")
     public ResponseEntity<Response<?>> deleteMyNotifications() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -52,7 +52,7 @@ public class NotificationController {
         );
     }
 
-
+    @Operation(summary = "Count unread notifications of the current user")
     @GetMapping("/unread/count")
     public ResponseEntity<Response<Long>> countUnread() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -67,7 +67,7 @@ public class NotificationController {
         );
     }
 
-
+    @Operation(summary = "Mark all notifications of the current user as read")
     @PostMapping("/mark-all")
     public ResponseEntity<Response<?>> markAll() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -82,7 +82,7 @@ public class NotificationController {
         );
     }
 
-
+    @Operation(summary = "Mark a notification by its id as read")
     @PostMapping("/mark/{notificationId}")
     public ResponseEntity<Response<?>> mark(@PathVariable String notificationId) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
