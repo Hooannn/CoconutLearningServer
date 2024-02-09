@@ -41,3 +41,5 @@ ehthumbs.db
 ### VS Code ###
 .vscode/
 serviceAccountKey.json
+jitsi.pk
+application.properties
