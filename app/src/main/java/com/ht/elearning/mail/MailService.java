@@ -29,13 +29,15 @@ public class MailService {
     @Value("${client.web.url}")
     private String clientWebUrl;
 
+    @Value("${spring.mail.from}")
+    private String sendFrom;
 
     public void sendEmail(String to, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
         message.setSubject(subject);
         message.setText(text);
-        message.setFrom("support@coconut.online");
+        message.setFrom(sendFrom);
         javaMailSender.send(message);
     }
 
@@ -47,7 +49,7 @@ public class MailService {
         context.setVariable("code", signature);
         String htmlContent = templateEngine.process("account-verification", context);
 
-        helper.setFrom("support@coconut.online");
+        helper.setFrom(sendFrom);
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -64,7 +66,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("reset-password-verification", context);
 
-        helper.setFrom("support@coconut.online");
+        helper.setFrom(sendFrom);
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -82,7 +84,7 @@ public class MailService {
         context.setVariable("homeUrl", clientWebUrl);
         String htmlContent = templateEngine.process("welcome", context);
 
-        helper.setFrom("support@coconut.online");
+        helper.setFrom(sendFrom);
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -100,7 +102,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("classroom-invitation", context);
 
-        helper.setFrom("support@coconut.online");
+        helper.setFrom(sendFrom);
         helper.setTo(invitation.getEmail());
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -119,7 +121,7 @@ public class MailService {
                 context.setVariable("acceptUrl", clientWebUrl + "/webhook?invite_code=" + invitation.getClassroom().getInviteCode());
                 context.setVariable("invitationText", "You have been invited to join \"" + invitation.getClassroom().getName() + "\" as a " + (invitation.getType() == InvitationType.USER ? "student" : "co-teacher") + ".");
                 String htmlContent = templateEngine.process("classroom-invitation", context);
-                helper.setFrom("support@coconut.online");
+                helper.setFrom(sendFrom);
                 helper.setTo(invitation.getEmail());
                 helper.setSubject(subject);
                 helper.setText(htmlContent, true);
@@ -144,7 +146,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("new-classwork", context);
 
-        helper.setFrom("support@coconut.online");
+        helper.setFrom(sendFrom);
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -163,7 +165,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("classwork-reminder", context);
 
-        helper.setFrom("support@coconut.online");
+        helper.setFrom(sendFrom);
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -184,7 +186,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("new-meeting", context);
 
-        helper.setFrom("support@coconut.online");
+        helper.setFrom(sendFrom);
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
@@ -205,7 +207,7 @@ public class MailService {
 
         String htmlContent = templateEngine.process("meeting-reminder", context);
 
-        helper.setFrom("support@coconut.online");
+        helper.setFrom(sendFrom);
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
