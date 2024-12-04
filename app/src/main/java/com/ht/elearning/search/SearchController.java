@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +23,9 @@ public class SearchController {
     @Operation(summary = "Lookup users by their name or email")
     @GetMapping("users/lookup")
     public ResponseEntity<Response<List<User>>> lookupUsers(@RequestParam String q) {
-        var response = searchService.lookupUsers(q);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getPrincipal().toString();
+        var response = searchService.lookupUsers(q).stream().filter(user -> !user.getId().equals(userId)).toList();
         return ResponseEntity.ok(
                 new Response<>(
                         HttpStatus.OK.value(),
