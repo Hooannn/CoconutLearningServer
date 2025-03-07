@@ -73,6 +73,13 @@ public class ElasticsearchService {
         );
     }
 
+    public void deleteDocuments(String index) throws IOException {
+        elasticsearchClient.deleteByQuery(d -> d
+                .index(index)
+                .query(q -> q.matchAll(m -> m))
+        );
+    }
+
 
     public SearchResponse<User> lookupUsers(String query) throws IOException {
         if (Helper.isEmail(query)) {

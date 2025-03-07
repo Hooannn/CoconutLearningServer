@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -94,8 +95,13 @@ public class UserService {
     }
 
     public void syncToElasticsearch() {
-        var users = userRepository.findAll();
-        elasticsearchSyncProcessor.indexUsers(users);
+        try {
+            var users = userRepository.findAll();
+            elasticsearchSyncProcessor.deleteUserDocuments();
+            elasticsearchSyncProcessor.indexUsers(users);
+        } catch (IOException e) {
+            throw new HttpException(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     public User updateProfile(UpdateProfileDto updateProfileDto, String userId) {

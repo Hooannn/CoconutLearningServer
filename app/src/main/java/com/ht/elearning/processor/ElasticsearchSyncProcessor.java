@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -21,5 +22,9 @@ public class ElasticsearchSyncProcessor {
     @Async
     public void indexUsers(List<User> users) {
         elasticsearchService.indexDocuments("users", users, User::getId);
+    }
+
+    public void deleteUserDocuments() throws IOException {
+        elasticsearchService.deleteDocuments("users");
     }
 }
