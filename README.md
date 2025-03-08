@@ -1,6 +1,6 @@
 ![enter image description here](https://img.freepik.com/free-vector/happy-freelancer-with-computer-home-young-man-sitting-armchair-using-laptop-chatting-online-smiling-vector-illustration-distance-work-online-learning-freelance_74855-8401.jpg)
 
-## Coconut Classroom Document
+## ELearning Platform Document
 
 #### Overview:
 
@@ -11,7 +11,7 @@ technologies used, CI/CD setup, and deployment process.
 #### Architecture:
 
 - **Backend**: The backend of the application is built with Spring Boot, a popular Java-based framework for building
-  robust and scalable web applications. It handles data processing, business logic, and interacts with the database.
+  robust and scalable web applications. It handles data processing, business logic, and interacts with the database,  using cronjob for email reminder
 
 - **Frontend**: The frontend of the application is developed using React, a JavaScript library for building user
   interfaces. It provides a responsive and interactive user experience.
@@ -24,7 +24,7 @@ technologies used, CI/CD setup, and deployment process.
 - **File server**: Using open-source self-hosted file server [seaweedfs](https://github.com/seaweedfs/seaweedfs)
 
 - **Notification**:
-    + For mail notifications: using [mailgun](https://www.mailgun.com).
+    + For mail notifications: using [sendgrid](https://www.sendgrid.com).
     + For realtime notifications: using [socket.io](https://socket.io/)
     + For push notifications: using [Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging)
 
@@ -34,22 +34,19 @@ technologies used, CI/CD setup, and deployment process.
 - **Portainer**: Using [portainer](https://github.com/portainer/portainer) for Docker management
 
 - **Nginx**: In the hosted VPS, using nginx to forward all requests to suitable domains
-    + https://cococlass.online: For landing page
-    + https://socket.cococlass.online: For socket.io server
-    + https://classroom.cococlass.online: For React app
-    + https://api.cococlass.online: For Spring boot API
-    + https://file.cococlass.online: For seaweedfs file server
-    + https://portainer.cococlass.online: for Docker management
+    + https://socket.eclass.ink: For socket.io server
+    + https://classroom.eclass.ink: For React app
+    + https://api.eclass.ink: For Spring boot API
+    + https://file.eclass.ink: For seaweedfs file server
+    + https://portainer.eclass.ink: for Docker management
 
 #### CI/CD Setup:
 
-##### Deployment: [CoconutDeployment](https://github.com/Hooannn/CoconutDeployment)
+##### Deployment: [Deployment](https://github.com/Hooannn/ELearningDeployment)
 
-##### Landing page: [CoconutLandingPage](https://github.com/Hooannn/CoconutLandingPage)
+##### Backend: [Server](https://github.com/Hooannn/ELearningServer)
 
-##### Backend: [CoconutLearningServer](https://github.com/Hooannn/CoconutLearningServer)
-
-##### Frontend: [CoconutLearningClient](https://github.com/Hooannn/CoconutLearningClient)
+##### Frontend: [Client](https://github.com/Hooannn/ELearningClient)
 
 - **GitHub Repository**: The source code for the application is hosted on GitHub in separate repositories for the
   backend and frontend and deployment.
@@ -64,15 +61,15 @@ technologies used, CI/CD setup, and deployment process.
 
 ### Features of the Application:
 
-Coconut Classroom is a powerful tool designed for educators to manage classes, assignments, and communication with
+This ELearning Platform is a powerful tool designed for educators to manage classes, assignments, and communication with
 students. Here are some of its key features:
 
-1. **Course Management**: Educators can create and organize classes, add students, and manage multiple courses from a
+1. **Course Management**: Teachers can create and organize classes, add students, and manage multiple courses from a
    single dashboard.
 2. **Assignment Distribution**: Teachers can create and distribute assignments, including instructions, due dates, and
    attachments such as documents, links, or videos.
 3. **Submission and Grading**: Students can submit assignments electronically, and teachers can review and grade them
-   within Coconut Classroom. Teachers can provide feedback and comments directly on assignments.
+   within this ELearning Platform. Teachers can provide feedback and comments directly on assignments.
 4. **Classroom Insights**: Teachers have access to analytics and insights, including assignment completion rates, and
    grading summaries, to track student progress and identify areas for improvement.
 5. **Announcements and Communication**: Teachers can schedule meetings, including start time, end time for all members
@@ -80,11 +77,8 @@ students. Here are some of its key features:
 6. **Realtime notifications**: Users can receive realtime updates and notifications, also mail notifications and push
    notifications.
 
-### API Design: [Swagger UI](https://api.cococlass.online/swagger-ui/index.html)
+### API Design: [Swagger UI](https://api.eclass.ink/swagger-ui/index.html)
 
 ### Database Design:
 
 ![enter image description here](https://i.ibb.co/rm0DrhT/default-public.png)
-
-
-
